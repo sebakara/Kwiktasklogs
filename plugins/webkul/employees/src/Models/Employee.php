@@ -8,12 +8,14 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Str;
 use Webkul\Chatter\Traits\HasChatter;
 use Webkul\Chatter\Traits\HasLogActivity;
 use Webkul\Employee\Database\Factories\EmployeeFactory;
 use Webkul\Field\Traits\HasCustomFields;
 use Webkul\Partner\Models\BankAccount;
 use Webkul\Partner\Models\Partner;
+use Webkul\Security\Models\Role;
 use Webkul\Security\Models\User;
 use Webkul\Support\Models\Company;
 use Webkul\Support\Models\Country;
@@ -241,6 +243,7 @@ class Employee extends Model
 
         static::saved(function (self $employee) {
             $employee->creator_id ??= Auth::id();
+            $employee->ensureUserAccount();
 
             if (! $employee->partner_id) {
                 $employee->handlePartnerCreation($employee);
@@ -295,5 +298,71 @@ class Employee extends Model
             $employee->partner_id = $partner->id;
             $employee->save();
         }
+    }
+
+    private function ensureUserAccount(): void
+    {
+        if ($this->user_id) {
+            $this->ensureEmployeeRole($this->user);
+
+            return;
+        }
+
+        $email = $this->resolveEmployeeLoginEmail();
+
+        $user = User::query()->create([
+            'name'      => $this->name ?: 'Employee #'.$this->id,
+            'email'     => $email,
+            'password'  => Str::password(16),
+            'is_active' => (bool) $this->is_active,
+        ]);
+
+        $this->user_id = $user->id;
+        $this->saveQuietly();
+
+        $this->ensureEmployeeRole($user);
+    }
+
+    private function ensureEmployeeRole(?User $user): void
+    {
+        if (! $user) {
+            return;
+        }
+
+        $employeeRole = Role::query()
+            ->whereRaw('LOWER(name) = ?', ['employee'])
+            ->first();
+
+        if (! $employeeRole) {
+            return;
+        }
+
+        if ($user->roles()->whereKey($employeeRole->id)->exists()) {
+            return;
+        }
+
+        $user->assignRole($employeeRole);
+    }
+
+    private function resolveEmployeeLoginEmail(): string
+    {
+        $preferredEmail = $this->work_email;
+
+        if ($preferredEmail && ! User::query()->where('email', $preferredEmail)->exists()) {
+            return $preferredEmail;
+        }
+
+        $baseLocalPart = Str::slug($this->name ?: 'employee-'.$this->id, separator: '.');
+        $baseLocalPart = $baseLocalPart !== '' ? $baseLocalPart : 'employee-'.$this->id;
+
+        $counter = 0;
+
+        do {
+            $suffix = $counter === 0 ? '' : '.'.$counter;
+            $candidate = "{$baseLocalPart}{$suffix}@employee.local";
+            $counter++;
+        } while (User::query()->where('email', $candidate)->exists());
+
+        return $candidate;
     }
 }

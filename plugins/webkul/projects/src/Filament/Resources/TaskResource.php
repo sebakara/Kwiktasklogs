@@ -52,7 +52,6 @@ use Filament\Tables\Filters\QueryBuilder\Constraints\TextConstraint;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
-use Webkul\Field\Filament\Forms\Components\ProgressStepper as FormProgressStepper;
 use Webkul\Field\Filament\Infolists\Components\ProgressStepper as InfolistProgressStepper;
 use Webkul\Field\Filament\Traits\HasCustomFields;
 use Webkul\Partner\Filament\Resources\PartnerResource;
@@ -83,7 +82,7 @@ class TaskResource extends Resource
 
     protected static ?string $slug = 'project/tasks';
 
-    protected static ?\Filament\Pages\Enums\SubNavigationPosition $subNavigationPosition = SubNavigationPosition::Top;
+    protected static ?SubNavigationPosition $subNavigationPosition = SubNavigationPosition::Top;
 
     protected static ?string $recordTitleAttribute = 'title';
 
@@ -117,12 +116,13 @@ class TaskResource extends Resource
             ->components([
                 Group::make()
                     ->schema([
-                        FormProgressStepper::make('stage_id')
-                            ->hiddenLabel()
-                            ->inline()
+                        Select::make('stage_id')
+                            ->label(__('projects::filament/resources/task.form.sections.settings.fields.stage'))
                             ->required()
-                            ->options(fn () => TaskStage::orderBy('sort')->get()->mapWithKeys(fn ($stage) => [$stage->id => $stage->name]))
-                            ->default(TaskStage::first()?->id),
+                            ->relationship('stage', 'name')
+                            ->searchable()
+                            ->preload()
+                            ->default(fn () => TaskStage::query()->orderBy('sort')->value('id')),
                         Section::make(__('projects::filament/resources/task.form.sections.general.title'))
                             ->schema([
                                 TextInput::make('title')
