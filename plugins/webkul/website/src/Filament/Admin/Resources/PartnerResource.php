@@ -2,9 +2,13 @@
 
 namespace Webkul\Website\Filament\Admin\Resources;
 
+use Filament\Forms\Components\TextInput;
 use Filament\Pages\Enums\SubNavigationPosition;
 use Filament\Resources\Pages\Page;
 use Filament\Resources\RelationManagers\RelationGroup;
+use Filament\Schemas\Components\Fieldset;
+use Filament\Schemas\Schema;
+use Illuminate\Validation\Rules\Password;
 use Webkul\Partner\Filament\Resources\PartnerResource as BasePartnerResource;
 use Webkul\Partner\Filament\Resources\PartnerResource\RelationManagers\AddressesRelationManager;
 use Webkul\Partner\Filament\Resources\PartnerResource\RelationManagers\ContactsRelationManager;
@@ -24,7 +28,40 @@ class PartnerResource extends BasePartnerResource
 
     protected static bool $shouldRegisterNavigation = true;
 
-    protected static ?\Filament\Pages\Enums\SubNavigationPosition $subNavigationPosition = SubNavigationPosition::Top;
+    protected static ?SubNavigationPosition $subNavigationPosition = SubNavigationPosition::Top;
+
+    public static function form(Schema $schema): Schema
+    {
+        $schema = parent::form($schema);
+
+        $generalSection = $schema->getComponents()[0];
+        $generalSectionComponents = $generalSection->getDefaultChildComponents();
+        $detailsGroup = $generalSectionComponents[1];
+
+        $detailsGroup->childComponents([
+            ...$detailsGroup->getDefaultChildComponents(),
+            Fieldset::make('Portal Access')
+                ->schema([
+                    TextInput::make('password')
+                        ->label('Password')
+                        ->password()
+                        ->revealable(filament()->arePasswordsRevealable())
+                        ->required(fn (string $operation): bool => $operation === 'create')
+                        ->rule(Password::default())
+                        ->same('passwordConfirmation')
+                        ->dehydrated(fn (?string $state): bool => filled($state)),
+                    TextInput::make('passwordConfirmation')
+                        ->label('Confirm Password')
+                        ->password()
+                        ->revealable(filament()->arePasswordsRevealable())
+                        ->required(fn (string $operation): bool => $operation === 'create')
+                        ->dehydrated(false),
+                ])
+                ->columns(2),
+        ]);
+
+        return $schema;
+    }
 
     public static function getNavigationLabel(): string
     {

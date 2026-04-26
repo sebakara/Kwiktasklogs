@@ -72,12 +72,12 @@ use Webkul\Employee\Filament\Resources\EmployeeResource\Pages\ManageSkill;
 use Webkul\Employee\Filament\Resources\EmployeeResource\Pages\ViewEmployee;
 use Webkul\Employee\Filament\Resources\EmployeeResource\RelationManagers\ResumeRelationManager;
 use Webkul\Employee\Filament\Resources\EmployeeResource\RelationManagers\SkillsRelationManager;
-use Webkul\Support\Models\Calendar;
 use Webkul\Employee\Models\Employee;
 use Webkul\Field\Filament\Traits\HasCustomFields;
 use Webkul\Security\Filament\Resources\CompanyResource;
 use Webkul\Security\Filament\Resources\UserResource;
 use Webkul\Security\Models\User;
+use Webkul\Support\Models\Calendar;
 use Webkul\Support\Models\Country;
 
 class EmployeeResource extends Resource
@@ -86,7 +86,7 @@ class EmployeeResource extends Resource
 
     protected static ?string $model = Employee::class;
 
-    protected static ?\Filament\Pages\Enums\SubNavigationPosition $subNavigationPosition = SubNavigationPosition::Top;
+    protected static ?SubNavigationPosition $subNavigationPosition = SubNavigationPosition::Top;
 
     protected static ?string $recordTitleAttribute = 'name';
 
@@ -165,6 +165,8 @@ class EmployeeResource extends Resource
                             ->schema([
                                 TextInput::make('work_email')
                                     ->label(__('employees::filament/resources/employee.form.sections.fields.work-email'))
+                                    ->required()
+                                    ->unique(ignoreRecord: true)
                                     ->suffixAction(
                                         Action::make('open_mailbox')
                                             ->icon('heroicon-o-envelope')
