@@ -904,6 +904,7 @@ class AccountManager
             'partner_bank_id'        => $paymentRegister->partner_bank_id,
             'payment_method_line_id' => $paymentRegister->payment_method_line_id,
             'destination_account_id' => $paymentRegister->lines[0]->account_id,
+            'receipt_attachment'     => $paymentRegister->receipt_attachment,
             'write_off_line_vals'    => [],
         ];
 
@@ -963,6 +964,7 @@ class AccountManager
             'partner_id'             => $batchValues['partner_id'],
             'payment_method_line_id' => $paymentMethodLine,
             'destination_account_id' => $batch['lines'][0]->account_id,
+            'receipt_attachment'     => $paymentRegister->receipt_attachment,
             'write_off_line_vals'    => [],
         ];
 

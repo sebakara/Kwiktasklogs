@@ -49,6 +49,7 @@ class PaymentRegister extends Model
         'group_payment',
         'can_group_payments',
         'payment_token_id',
+        'receipt_attachment',
     ];
 
     protected $casts = [

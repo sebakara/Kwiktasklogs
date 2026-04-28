@@ -67,16 +67,33 @@ class AcceptInvitation extends SimplePage
 
     public function create(): void
     {
-        $this->invitationModel = Invitation::find($this->invitation);
+        $this->invitationModel = Invitation::findOrFail($this->invitation);
+        $state = $this->form->getState();
 
-        $user = User::create([
-            'name'               => $this->form->getState()['name'],
-            'password'           => $this->form->getState()['password'],
-            'email'              => $this->invitationModel->email,
-            'default_company_id' => app(UserSettings::class)->default_company_id,
+        $user = User::withTrashed()
+            ->firstOrNew(['email' => $this->invitationModel->email]);
+
+        if ($user->trashed()) {
+            $user->restore();
+        }
+
+        $user->fill([
+            'name'      => $state['name'],
+            'password'  => $state['password'],
+            'is_active' => true,
         ]);
 
-        $user->assignRole(app(UserSettings::class)->default_role_id);
+        if (! $user->default_company_id) {
+            $user->default_company_id = app(UserSettings::class)->default_company_id;
+        }
+
+        $user->save();
+
+        $defaultRoleId = app(UserSettings::class)->default_role_id;
+
+        if ($defaultRoleId && ! $user->roles()->whereKey($defaultRoleId)->exists()) {
+            $user->assignRole($defaultRoleId);
+        }
 
         $this->invitationModel->delete();
 

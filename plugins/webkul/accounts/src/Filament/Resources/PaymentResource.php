@@ -9,6 +9,7 @@ use Filament\Actions\EditAction;
 use Filament\Actions\ExportAction;
 use Filament\Actions\ViewAction;
 use Filament\Forms\Components\DatePicker;
+use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\ToggleButtons;
@@ -31,6 +32,7 @@ use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
 use Webkul\Account\Enums\JournalType;
 use Webkul\Account\Enums\PaymentStatus;
 use Webkul\Account\Enums\PaymentType;
@@ -183,6 +185,15 @@ class PaymentResource extends Resource
                                         TextInput::make('memo')
                                             ->label(__('accounts::filament/resources/payment.form.sections.fields.memo'))
                                             ->maxLength(255),
+                                        FileUpload::make('receipt_attachment')
+                                            ->label('Receipt Attachment')
+                                            ->disk('public')
+                                            ->directory('payments/receipts')
+                                            ->visibility('public')
+                                            ->openable()
+                                            ->downloadable()
+                                            ->acceptedFileTypes(['application/pdf', 'image/*'])
+                                            ->maxSize(5120),
                                     ])
                                     ->columns(1),
 
@@ -548,6 +559,12 @@ class PaymentResource extends Resource
                                     ->label(__('accounts::filament/resources/payment.infolist.sections.payment-information.entries.memo'))
                                     ->icon('heroicon-o-document-text')
                                     ->placeholder('—'),
+                                TextEntry::make('receipt_attachment')
+                                    ->label('Receipt Attachment')
+                                    ->icon('heroicon-o-paper-clip')
+                                    ->formatStateUsing(fn (?string $state): string => $state ? 'Open attachment' : '—')
+                                    ->url(fn (?string $state): ?string => $state ? Storage::url($state) : null)
+                                    ->openUrlInNewTab(),
                             ])
                             ->columns(1),
 

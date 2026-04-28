@@ -9,8 +9,8 @@ use Knuckles\Scribe\Attributes\Authenticated;
 use Knuckles\Scribe\Attributes\BodyParam;
 use Knuckles\Scribe\Attributes\Endpoint;
 use Knuckles\Scribe\Attributes\Group;
-use Knuckles\Scribe\Attributes\Subgroup;
 use Knuckles\Scribe\Attributes\Response;
+use Knuckles\Scribe\Attributes\Subgroup;
 use Knuckles\Scribe\Attributes\Unauthenticated;
 use Webkul\Security\Models\User;
 
@@ -27,6 +27,9 @@ class AuthController extends Controller
     #[Response(status: 401, description: 'Invalid credentials', content: '{"message": "The provided credentials are incorrect."}')]
     public function login(Request $request)
     {
+
+        echo 'Ndahagera hano';
+        exit;
         $request->validate([
             'email'    => 'required|email',
             'password' => 'required',
