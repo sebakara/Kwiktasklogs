@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 use Webkul\Chatter\Traits\HasChatter;
 use Webkul\Chatter\Traits\HasLogActivity;
@@ -15,8 +16,11 @@ use Webkul\Employee\Database\Factories\EmployeeFactory;
 use Webkul\Field\Traits\HasCustomFields;
 use Webkul\Partner\Models\BankAccount;
 use Webkul\Partner\Models\Partner;
+use Webkul\Security\Mail\UserInvitationMail;
+use Webkul\Security\Models\Invitation;
 use Webkul\Security\Models\Role;
 use Webkul\Security\Models\User;
+use Webkul\Security\Settings\UserSettings;
 use Webkul\Support\Models\Company;
 use Webkul\Support\Models\Country;
 use Webkul\Support\Models\State;
@@ -303,29 +307,42 @@ class Employee extends Model
     private function ensureUserAccount(): void
     {
         if ($this->user_id) {
+            $this->ensureUserAccessContext($this->user);
             $this->ensureEmployeeRole($this->user);
 
             return;
         }
 
         $email = $this->resolveEmployeeLoginEmail();
+        $defaultCompanyId = $this->company_id ?: app(UserSettings::class)->default_company_id;
 
         $user = User::query()->create([
-            'name'      => $this->name ?: 'Employee #'.$this->id,
-            'email'     => $email,
-            'password'  => Str::password(16),
-            'is_active' => (bool) $this->is_active,
+            'name'               => $this->name ?: 'Employee #'.$this->id,
+            'email'              => $email,
+            'password'           => Str::password(16),
+            'is_active'          => (bool) $this->is_active,
+            'default_company_id' => $defaultCompanyId,
         ]);
 
         $this->user_id = $user->id;
         $this->saveQuietly();
 
+        $this->ensureUserAccessContext($user);
         $this->ensureEmployeeRole($user);
+        $this->sendEmployeeInvitation($user);
     }
 
     private function ensureEmployeeRole(?User $user): void
     {
         if (! $user) {
+            return;
+        }
+
+        $defaultRoleId = app(UserSettings::class)->default_role_id;
+
+        if ($defaultRoleId && ! $user->roles()->whereKey($defaultRoleId)->exists()) {
+            $user->assignRole($defaultRoleId);
+
             return;
         }
 
@@ -344,12 +361,48 @@ class Employee extends Model
         $user->assignRole($employeeRole);
     }
 
+    private function ensureUserAccessContext(?User $user): void
+    {
+        if (! $user) {
+            return;
+        }
+
+        $defaultCompanyId = $this->company_id ?: app(UserSettings::class)->default_company_id;
+
+        if ($defaultCompanyId && ! $user->default_company_id) {
+            $user->default_company_id = $defaultCompanyId;
+            $user->saveQuietly();
+        }
+
+        if ($defaultCompanyId) {
+            $user->allowedCompanies()->syncWithoutDetaching([$defaultCompanyId]);
+        }
+    }
+
+    private function sendEmployeeInvitation(User $user): void
+    {
+        if (! filter_var($user->email, FILTER_VALIDATE_EMAIL) || str_ends_with($user->email, '@employee.local')) {
+            return;
+        }
+
+        $invitation = Invitation::query()->firstOrCreate([
+            'email' => $user->email,
+        ]);
+
+        Mail::to($invitation->email)->send(new UserInvitationMail($invitation));
+    }
+
     private function resolveEmployeeLoginEmail(): string
     {
-        $preferredEmail = $this->work_email;
+        $preferredEmails = array_filter([
+            $this->work_email,
+            $this->private_email,
+        ]);
 
-        if ($preferredEmail && ! User::query()->where('email', $preferredEmail)->exists()) {
-            return $preferredEmail;
+        foreach ($preferredEmails as $preferredEmail) {
+            if (! User::query()->where('email', $preferredEmail)->exists()) {
+                return $preferredEmail;
+            }
         }
 
         $baseLocalPart = Str::slug($this->name ?: 'employee-'.$this->id, separator: '.');

@@ -167,5 +167,4 @@
     </aside>
     {{-- format-ignore-end --}}
 
-    <x-filament-actions::modals />
 </div>

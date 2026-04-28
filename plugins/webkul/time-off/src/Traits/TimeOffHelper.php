@@ -8,12 +8,9 @@ use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\Toggle;
-use Filament\Infolists\Components\TextEntry;
 use Filament\Notifications\Notification;
 use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Section;
-use Filament\Schemas\Components\Utilities\Get;
-use Filament\Schemas\Components\Utilities\Set;
 use Illuminate\Support\Facades\Auth;
 use Webkul\Employee\Models\Employee;
 use Webkul\TimeOff\Enums\RequestDateFromPeriod;
@@ -50,26 +47,14 @@ trait TimeOffHelper
                         ->relationship('employee', 'name')
                         ->searchable()
                         ->preload()
-                        ->live()
-                        ->visible(fn (Get $get) => $isVisible ?? false)
-                        ->afterStateUpdated(function (Set $set, $state) {
-                            if ($state) {
-                                $employee = Employee::find($state);
-
-                                if ($employee->department) {
-                                    $set('department_id', $employee->department->id);
-                                } else {
-                                    $set('department_id', null);
-                                }
-                            }
-                        })
+                        ->visible((bool) ($isVisible ?? false))
                         ->label(__('time-off::filament/clusters/management/resources/time-off.form.fields.employee-name'))
                         ->required(),
                     Select::make('department_id')
                         ->relationship('department', 'name')
                         ->label(__('time-off::filament/clusters/management/resources/time-off.form.fields.department-name'))
                         ->searchable()
-                        ->visible(fn (Get $get) => $isVisible ?? false)
+                        ->visible((bool) ($isVisible ?? false))
                         ->preload()
                         ->required(),
 
@@ -87,89 +72,27 @@ trait TimeOffHelper
                                 ->native(false)
                                 ->label(__('time-off::filament/widgets/calendar-widget.form.fields.request-date-from'))
                                 ->required()
-                                ->live()
-                                ->prefixIcon('heroicon-o-calendar')
-                                ->afterStateUpdated(function ($state, Set $set, Get $get) {
-                                    if (blank($state)) {
-                                        $set('request_date_to', null);
-                                    }
-
-                                    if ($state && ! $get('request_unit_half')) {
-                                        $this->updateDurationCalculation($set, $get);
-                                    }
-                                }),
+                                ->prefixIcon('heroicon-o-calendar'),
 
                             DatePicker::make('request_date_to')
                                 ->native(false)
                                 ->label('To Date')
-                                ->hidden(fn (Get $get) => $get('request_unit_half'))
-                                ->required(fn (Get $get) => ! $get('request_unit_half'))
-                                ->live()
-                                ->prefixIcon('heroicon-o-calendar')
-                                ->disabled(fn (Get $get) => blank($get('request_date_from')))
-                                ->minDate(fn (Get $get) => $get('request_date_from'))
-                                ->afterStateUpdated(function ($state, Set $set, Get $get) {
-                                    if ($state && $get('request_date_from')) {
-                                        $this->updateDurationCalculation($set, $get);
-                                    }
-                                }),
+                                ->prefixIcon('heroicon-o-calendar'),
                         ]),
 
                     Grid::make(2)
                         ->schema([
                             Toggle::make('request_unit_half')
-                                ->live()
                                 ->label(__('time-off::filament/widgets/calendar-widget.form.fields.half-day'))
-                                ->helperText(__('time-off::filament/widgets/calendar-widget.form.fields.half-day-helper'))
-                                ->afterStateUpdated(function ($state, Set $set, Get $get) {
-                                    if ($state) {
-                                        $set('duration_info', '0.5 day');
-                                    } else {
-                                        $this->updateDurationCalculation($set, $get);
-                                    }
-                                }),
+                                ->helperText(__('time-off::filament/widgets/calendar-widget.form.fields.half-day-helper')),
 
                             Select::make('request_date_from_period')
                                 ->label(__('time-off::filament/widgets/calendar-widget.form.fields.period'))
                                 ->options(RequestDateFromPeriod::class)
                                 ->default(RequestDateFromPeriod::MORNING)
                                 ->native(false)
-                                ->visible(fn (Get $get) => $get('request_unit_half'))
-                                ->required(fn (Get $get) => $get('request_unit_half'))
                                 ->prefixIcon('heroicon-o-sun'),
                         ]),
-
-                    TextEntry::make('duration_info')
-                        ->label(__('time-off::filament/widgets/calendar-widget.form.fields.duration'))
-                        ->live()
-                        ->state(function (Get $get): string {
-                            if ($get('request_unit_half')) {
-                                return '0.5 day';
-                            }
-
-                            $startDate = $get('request_date_from');
-                            $endDate = $get('request_date_to');
-
-                            if (! $startDate) {
-                                return __('time-off::filament/widgets/calendar-widget.form.fields.please-select-dates');
-                            }
-
-                            $start = Carbon::parse($startDate);
-                            $end = $endDate ? Carbon::parse($endDate) : $start;
-
-                            $businessDays = $this->calculateBusinessDays($start, $end);
-                            $totalDays = $this->calculateTotalDays($start, $end);
-                            $weekendDays = $totalDays - $businessDays;
-
-                            $duration = $businessDays.' working day'.($businessDays !== 1 ? 's' : '');
-
-                            if ($weekendDays > 0) {
-                                $duration .= ' (+ '.$weekendDays.' weekend day'.($weekendDays !== 1 ? 's' : '').')';
-                            }
-
-                            return $duration;
-                        })
-                        ->extraAttributes(['class' => 'font-medium text-primary-600 bg-primary-50 p-3 rounded-lg border border-primary-200']),
 
                     Textarea::make('private_name')
                         ->label(__('time-off::filament/widgets/calendar-widget.form.fields.description'))
@@ -376,33 +299,6 @@ trait TimeOffHelper
         return $query->exists();
     }
 
-    private function updateDurationCalculation(Set $set, Get $get): void
-    {
-        $startDate = $get('request_date_from');
-        $endDate = $get('request_date_to');
-
-        if (! $startDate) {
-            $set('duration_info', 'Please select dates');
-
-            return;
-        }
-
-        $start = Carbon::parse($startDate);
-        $end = $endDate ? Carbon::parse($endDate) : $start;
-
-        $businessDays = $this->calculateBusinessDays($start, $end);
-        $totalDays = $this->calculateTotalDays($start, $end);
-        $weekendDays = $totalDays - $businessDays;
-
-        $duration = $businessDays.' working day'.($businessDays !== 1 ? 's' : '');
-
-        if ($weekendDays > 0) {
-            $duration .= ' (+ '.$weekendDays.' weekend day'.($weekendDays !== 1 ? 's' : '').')';
-        }
-
-        $set('duration_info', $duration);
-    }
-
     private function calculateBusinessDaysAndNumbers(array &$data): void
     {
         $info = $this->getDurationInfo($data);
@@ -428,11 +324,9 @@ trait TimeOffHelper
         if ($employee) {
             $data['employee_id'] = $employee->id;
 
-            if (! empty($data['department_id'])) {
-                $data['department_id'] = $data['department_id'];
-            } elseif ($employee->department) {
+            if (empty($data['department_id']) && $employee->department) {
                 $data['department_id'] = $employee->department->id;
-            } else {
+            } elseif (empty($data['department_id'])) {
                 $data['department_id'] = null;
             }
 

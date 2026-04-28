@@ -63,6 +63,7 @@ class Payment extends Model
         'payment_transaction_id',
         'source_payment_id',
         'payment_token_id',
+        'receipt_attachment',
     ];
 
     protected $casts = [
