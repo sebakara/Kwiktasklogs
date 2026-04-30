@@ -30,6 +30,12 @@
             float: left;
         }
 
+        .company-logo {
+            max-height: 64px;
+            width: auto;
+            margin-bottom: 12px;
+        }
+
         .vendor-info {
             width: 45%;
             float: right;
@@ -130,6 +136,25 @@
         <div class="header">
             <!-- Company Address -->
             <div class="company-info">
+                @php
+                    $companyLogoDataUri = null;
+                    if ($record->company?->logo) {
+                        $logoRelativePath = ltrim($record->company->logo, '/');
+                        $storageLogoPath = storage_path('app/public/'.$logoRelativePath);
+                        $publicLogoPath = public_path('storage/'.$logoRelativePath);
+                        $logoPath = file_exists($storageLogoPath) ? $storageLogoPath : (file_exists($publicLogoPath) ? $publicLogoPath : null);
+
+                        if ($logoPath) {
+                            $mimeType = mime_content_type($logoPath) ?: 'image/png';
+                            $companyLogoDataUri = 'data:'.$mimeType.';base64,'.base64_encode(file_get_contents($logoPath));
+                        }
+                    }
+                @endphp
+                @if ($companyLogoDataUri)
+                    <div>
+                        <img src="{{ $companyLogoDataUri }}" alt="Company Logo" class="company-logo">
+                    </div>
+                @endif
                 <div style="font-size: 28px; color: #1a4587; margin-bottom: 10px;">{{ $record->company->name }}</div>
 
                 @if ($record->company->partner)
@@ -221,7 +246,7 @@
 
         <!-- Agreement Title -->
         <div class="agreement-title">
-            Invoice ID #{{ $record->name }}
+            Invoice {{ str_replace('/', '-', $record->name) }}
         </div>
 
         <!-- Details Table -->
@@ -255,7 +280,7 @@
             <table class="items-table">
                 <thead>
                     <tr>
-                        <th>Product</th>
+                        <th>Item</th>
                         <th>Quantity</th>
 
                         @if (app(\Webkul\Product\Settings\ProductSettings::class)->enable_uom)
@@ -268,12 +293,18 @@
 
                 <tbody>
                     @foreach ($record->invoiceLines as $item)
+                    @php
+                        $projectName = $item->project_id
+                            ? \Illuminate\Support\Facades\DB::table('projects_projects')->where('id', $item->project_id)->value('name')
+                            : null;
+                        $itemName = $item->product?->name ?? $projectName ?? $item->name ?? '-';
+                    @endphp
                     <tr>
-                        <td>{{ $item->product->name }}</td>
+                        <td>{{ $itemName }}</td>
                         <td>{{ number_format($item->quantity) }}</td>
 
                         @if (app(\Webkul\Product\Settings\ProductSettings::class)->enable_uom)
-                            <td>{{ $item->product->uom->name }}</td>
+                            <td>{{ $item->product?->uom?->name ?? '-' }}</td>
                         @endif
 
                         <td>{{ money($item->price_unit, $record->currency->name) }}</td>

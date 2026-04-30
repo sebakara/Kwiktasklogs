@@ -207,7 +207,7 @@ trait TimeOffHelper
 
         $totalAllocated = LeaveAllocation::where('employee_id', $employee->id)
             ->where('holiday_status_id', $leaveTypeId)
-            ->where('state', State::VALIDATE_TWO->value)
+            ->forAvailableBalance()
             ->where(function ($q) use ($endOfYear) {
                 $q->where('date_to', '<=', $endOfYear)
                     ->orWhereNull('date_to');

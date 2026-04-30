@@ -52,7 +52,6 @@ use Filament\Tables\Filters\QueryBuilder\Constraints\TextConstraint;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
-use Webkul\Field\Filament\Infolists\Components\ProgressStepper as InfolistProgressStepper;
 use Webkul\Field\Filament\Traits\HasCustomFields;
 use Webkul\Partner\Filament\Resources\PartnerResource;
 use Webkul\Project\Enums\TaskState;
@@ -663,12 +662,6 @@ class TaskResource extends Resource
             ->components([
                 Group::make()
                     ->schema([
-                        InfolistProgressStepper::make('stage_id')
-                            ->hiddenLabel()
-                            ->inline()
-                            ->options(fn () => TaskStage::orderBy('sort')->get()->mapWithKeys(fn ($stage) => [$stage->id => $stage->name])->toArray())
-                            ->default(TaskStage::first()?->id),
-
                         Section::make(__('projects::filament/resources/task.infolist.sections.general.title'))
                             ->schema([
                                 TextEntry::make('title')
@@ -717,7 +710,7 @@ class TaskResource extends Resource
                                             ->icon('heroicon-o-folder')
                                             ->placeholder('—')
                                             ->color('primary')
-                                            ->url(fn (Task $record): string => $record->project_id ? ProjectResource::getUrl('view', ['record' => $record->project]) : '#'),
+                                            ->url(fn (Task $record): string => $record->project_id ? ProjectResource::getUrl('view', ['record' => $record->project_id]) : '#'),
 
                                         TextEntry::make('milestone.name')
                                             ->label(__('projects::filament/resources/task.infolist.sections.project-information.entries.milestone'))
@@ -728,7 +721,39 @@ class TaskResource extends Resource
                                         TextEntry::make('stage.name')
                                             ->label(__('projects::filament/resources/task.infolist.sections.project-information.entries.stage'))
                                             ->icon('heroicon-o-queue-list')
-                                            ->badge(),
+                                            ->badge()
+                                            ->formatStateUsing(function (?string $state, Task $record): ?string {
+                                                $stageName = $record->stage?->name ?? $state;
+
+                                                if ($stageName === null || $stageName === '') {
+                                                    return null;
+                                                }
+
+                                                $project = $record->relationLoaded('project')
+                                                    ? $record->project
+                                                    : $record->project()->first();
+
+                                                if (! $project) {
+                                                    return $stageName;
+                                                }
+
+                                                $orderedStages = $project->relationLoaded('taskStages')
+                                                    ? $project->taskStages->sortBy('sort')->values()
+                                                    : $project->taskStages()->orderBy('sort')->get();
+
+                                                if ($orderedStages->isEmpty()) {
+                                                    return $stageName;
+                                                }
+
+                                                $position = $orderedStages->search(fn ($stage): bool => (int) $stage->id === (int) $record->stage_id);
+                                                $total = $orderedStages->count();
+
+                                                if ($position === false || $total <= 1) {
+                                                    return $stageName;
+                                                }
+
+                                                return $stageName.' · '.(((int) $position) + 1).'/'.$total;
+                                            }),
 
                                         TextEntry::make('partner.name')
                                             ->label(__('projects::filament/resources/task.infolist.sections.project-information.entries.customer'))

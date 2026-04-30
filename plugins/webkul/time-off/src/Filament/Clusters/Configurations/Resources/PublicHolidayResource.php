@@ -100,6 +100,7 @@ class PublicHolidayResource extends Resource
                     Select::make('calendar')
                         ->searchable()
                         ->label(__('time-off::filament/clusters/configurations/resources/public-holiday.form.fields.calendar'))
+                        ->helperText(__('time-off::filament/clusters/configurations/resources/public-holiday.form.fields.calendar-helper'))
                         ->preload()
                         ->relationship('calendar', 'name'),
                 ])->columnSpanFull(),

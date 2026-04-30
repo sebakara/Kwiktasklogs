@@ -42,6 +42,7 @@ return [
 
                         'columns' => [
                             'product'             => 'المنتج',
+                            'project'             => 'المشروع',
                             'quantity'            => 'الكمية',
                             'unit'                => 'الوحدة',
                             'taxes'               => 'الضرائب',
@@ -51,7 +52,13 @@ return [
                         ],
 
                         'fields' => [
-                            'product'             => 'المنتج',
+                            'product'                  => 'المنتج',
+                            'project'                  => 'المشروع',
+                            'project-tax-mode'         => 'طريقة ضريبة المشروع',
+                            'project-tax-mode-options' => [
+                                'tax-excluded' => 'غير شامل الضريبة',
+                                'tax-included' => 'شامل الضريبة',
+                            ],
                             'quantity'            => 'الكمية',
                             'unit'                => 'الوحدة',
                             'taxes'               => 'الضرائب',
@@ -219,6 +226,7 @@ return [
                     'products' => [
                         'entries' => [
                             'product'             => 'المنتج',
+                            'project'             => 'المشروع',
                             'quantity'            => 'الكمية',
                             'unit'                => 'وحدة القياس',
                             'taxes'               => 'الضرائب',

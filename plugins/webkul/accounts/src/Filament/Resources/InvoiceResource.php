@@ -51,6 +51,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Webkul\Account\Enums\CommunicationStandard;
 use Webkul\Account\Enums\CommunicationType;
@@ -70,6 +71,7 @@ use Webkul\Account\Filament\Resources\InvoiceResource\Pages\ViewInvoice;
 use Webkul\Account\Livewire\InvoiceSummary;
 use Webkul\Account\Models\CashRounding;
 use Webkul\Account\Models\Invoice;
+use Webkul\Account\Models\Journal;
 use Webkul\Account\Models\MoveLine;
 use Webkul\Account\Models\Partner;
 use Webkul\Account\Models\Product;
@@ -318,7 +320,7 @@ class InvoiceResource extends Resource
                                                 modifyQueryUsing: function (Builder $query, Get $get) {
                                                     $companyId = $get('company_id') ?? filament()->auth()->user()->default_company_id;
 
-                                                    $bankAccountIds = \Webkul\Account\Models\Journal::where('type', \Webkul\Account\Enums\JournalType::BANK)
+                                                    $bankAccountIds = Journal::where('type', JournalType::BANK)
                                                         ->where('company_id', $companyId)
                                                         ->pluck('bank_account_id')
                                                         ->filter();
@@ -849,6 +851,10 @@ class InvoiceResource extends Resource
                                             ->alignCenter()
                                             ->toggleable()
                                             ->label(__('accounts::filament/resources/invoice.infolist.tabs.invoice-lines.repeater.products.entries.product')),
+                                        InfolistTableColumn::make('project_id')
+                                            ->alignCenter()
+                                            ->toggleable()
+                                            ->label(__('accounts::filament/resources/invoice.infolist.tabs.invoice-lines.repeater.products.entries.project')),
                                         InfolistTableColumn::make('quantity')
                                             ->alignCenter()
                                             ->toggleable()
@@ -877,6 +883,9 @@ class InvoiceResource extends Resource
                                     ->schema([
                                         TextEntry::make('name')
                                             ->placeholder('-'),
+                                        TextEntry::make('project_id')
+                                            ->placeholder('-')
+                                            ->formatStateUsing(fn ($state) => $state ? (DB::table('projects_projects')->where('id', $state)->value('name') ?? '-') : '-'),
                                         TextEntry::make('quantity')
                                             ->placeholder('-'),
                                         TextEntry::make('uom')
@@ -1098,7 +1107,11 @@ class InvoiceResource extends Resource
                     ->label(__('accounts::filament/resources/invoice.form.tabs.invoice-lines.repeater.products.columns.product'))
                     ->width(300)
                     ->resizable()
-                    ->markAsRequired()
+                    ->toggleable(),
+                TableColumn::make('project_id')
+                    ->label(__('accounts::filament/resources/invoice.form.tabs.invoice-lines.repeater.products.columns.project'))
+                    ->width(260)
+                    ->resizable()
                     ->toggleable(),
                 TableColumn::make('quantity')
                     ->label(__('accounts::filament/resources/invoice.form.tabs.invoice-lines.repeater.products.columns.quantity'))
@@ -1166,8 +1179,27 @@ class InvoiceResource extends Resource
                     ->live()
                     ->dehydrated()
                     ->disabled(fn ($record) => in_array($record?->parent_state, [MoveState::POSTED, MoveState::CANCEL]))
-                    ->afterStateUpdated(fn (Set $set, Get $get) => static::afterProductUpdated($set, $get))
-                    ->required(),
+                    ->afterStateUpdated(fn (Set $set, Get $get) => static::afterProductUpdated($set, $get)),
+                Select::make('project_id')
+                    ->label(__('accounts::filament/resources/invoice.form.tabs.invoice-lines.repeater.products.fields.project'))
+                    ->options(fn (): array => DB::table('projects_projects')->orderBy('name')->pluck('name', 'id')->all())
+                    ->searchable()
+                    ->preload()
+                    ->dehydrated()
+                    ->disabled(fn ($record) => in_array($record?->parent_state, [MoveState::POSTED, MoveState::CANCEL])),
+                Select::make('project_tax_mode')
+                    ->label(__('accounts::filament/resources/invoice.form.tabs.invoice-lines.repeater.products.fields.project-tax-mode'))
+                    ->options([
+                        'tax_excluded' => __('accounts::filament/resources/invoice.form.tabs.invoice-lines.repeater.products.fields.project-tax-mode-options.tax-excluded'),
+                        'tax_included' => __('accounts::filament/resources/invoice.form.tabs.invoice-lines.repeater.products.fields.project-tax-mode-options.tax-included'),
+                    ])
+                    ->default('tax_excluded')
+                    ->native(false)
+                    ->live()
+                    ->dehydrated(false)
+                    ->hidden(fn (Get $get): bool => blank($get('project_id')) || filled($get('product_id')))
+                    ->disabled(fn ($record) => in_array($record?->parent_state, [MoveState::POSTED, MoveState::CANCEL]))
+                    ->afterStateUpdated(fn (Set $set, Get $get) => self::calculateLineTotals($set, $get)),
                 TextInput::make('quantity')
                     ->label(__('accounts::filament/resources/invoice.form.tabs.invoice-lines.repeater.products.fields.quantity'))
                     ->required()
@@ -1371,11 +1403,24 @@ class InvoiceResource extends Resource
     private static function calculateLineTotals(Set $set, Get $get): void
     {
         if (! $get('product_id')) {
-            $set('price_unit', 0);
-            $set('discount', 0);
-            $set('price_tax', 0);
-            $set('price_subtotal', 0);
-            $set('price_total', 0);
+            $currency = Currency::find($get('../../currency_id'));
+            $company = Company::find($get('../../company_id'));
+            $lineTotals = self::calculateProjectLineTotals(
+                [
+                    'quantity'         => $get('quantity'),
+                    'price_unit'       => $get('price_unit'),
+                    'discount'         => $get('discount'),
+                    'taxes'            => $get('taxes') ?? [],
+                    'project_tax_mode' => $get('project_tax_mode') ?? 'tax_excluded',
+                ],
+                $currency,
+                $company,
+                $get('../../move_type'),
+            );
+
+            $set('price_tax', round($lineTotals['tax'], 4));
+            $set('price_subtotal', round($lineTotals['subtotal'], 4));
+            $set('price_total', round($lineTotals['total'], 4));
 
             return;
         }
@@ -1481,13 +1526,10 @@ class InvoiceResource extends Resource
         }
 
         $mockLines = collect($products)
-            ->filter(fn ($productData) => ! empty($productData['product_id']))
+            ->filter(fn ($productData) => ! empty($productData['product_id']) || ! empty($productData['project_id']))
             ->map(function ($productData) use ($currency, $company, $mockMove) {
                 $product = Product::find($productData['product_id']);
-
-                if (! $product) {
-                    return null;
-                }
+                $hasProduct = (bool) $product;
 
                 $mockLine = new MoveLine([
                     'quantity'     => $productData['quantity'] ?? 1,
@@ -1496,13 +1538,36 @@ class InvoiceResource extends Resource
                     'display_type' => DisplayType::PRODUCT,
                 ]);
 
-                $mockLine->setRelation('taxes', Tax::whereIn('id', $productData['taxes'] ?? [])->get());
-                $mockLine->setRelation('currency', $currency);
-                $mockLine->setRelation('company', $company);
-                $mockLine->setRelation('product', $product);
-                $mockLine->setRelation('move', $mockMove);
+                if ($hasProduct) {
+                    $mockLine->setRelation('taxes', Tax::whereIn('id', $productData['taxes'] ?? [])->get());
+                    $mockLine->setRelation('currency', $currency);
+                    $mockLine->setRelation('company', $company);
+                    $mockLine->setRelation('product', $product);
+                    $mockLine->setRelation('move', $mockMove);
 
-                return $mockLine;
+                    return $mockLine;
+                }
+
+                $lineTotals = self::calculateProjectLineTotals(
+                    [
+                        'quantity'         => $productData['quantity'] ?? 1,
+                        'price_unit'       => $productData['price_unit'] ?? 0,
+                        'discount'         => $productData['discount'] ?? 0,
+                        'taxes'            => $productData['taxes'] ?? [],
+                        'project_tax_mode' => $productData['project_tax_mode'] ?? 'tax_excluded',
+                    ],
+                    $currency,
+                    $company,
+                    $mockMove->move_type,
+                );
+
+                return [
+                    'special_type' => 'project_line',
+                    'tax_details'  => [
+                        'raw_total_excluded_currency' => $lineTotals['subtotal'],
+                        'raw_total_included_currency' => $lineTotals['total'],
+                    ],
+                ];
             })
             ->filter();
 
@@ -1512,9 +1577,19 @@ class InvoiceResource extends Resource
             return $defaultTotals;
         }
 
-        $mockMove->setRelation('lines', $mockLines);
+        $productLines = $mockLines->filter(fn ($line) => $line instanceof MoveLine)->values();
+        $projectLines = $mockLines->filter(fn ($line) => is_array($line))->values();
 
-        [$baseLines] = AccountFacade::getRoundedBaseAndTaxLines($mockMove, false);
+        $baseLines = [];
+
+        if ($productLines->isNotEmpty()) {
+            $mockMove->setRelation('lines', $productLines);
+            [$baseLines] = AccountFacade::getRoundedBaseAndTaxLines($mockMove, false);
+        }
+
+        if ($projectLines->isNotEmpty()) {
+            $baseLines = array_merge($baseLines, $projectLines->all());
+        }
 
         $subtotal = 0;
         $grandTotal = 0;
@@ -1549,6 +1624,64 @@ class InvoiceResource extends Resource
         $livewire->dispatch('itemUpdated', $defaultTotals);
 
         return $defaultTotals;
+    }
+
+    private static function calculateProjectLineTotals(array $lineData, ?Currency $currency, ?Company $company, mixed $moveType): array
+    {
+        $quantity = (float) ($lineData['quantity'] ?? 0);
+        $priceUnit = (float) ($lineData['price_unit'] ?? 0);
+        $discount = (float) ($lineData['discount'] ?? 0);
+        $taxIds = $lineData['taxes'] ?? [];
+        $taxMode = $lineData['project_tax_mode'] ?? 'tax_excluded';
+        $specialMode = $taxMode === 'tax_included' ? 'total_included' : 'total_excluded';
+        $rawBase = $quantity * $priceUnit * (1 - (max(0, min(100, $discount)) / 100));
+
+        if (! $currency || ! $company || empty($taxIds)) {
+            return [
+                'subtotal' => $rawBase,
+                'tax'      => 0.0,
+                'total'    => $rawBase,
+            ];
+        }
+
+        $mockMove = new Invoice([
+            'move_type'   => $moveType,
+            'currency_id' => $currency->id,
+            'company_id'  => $company->id,
+        ]);
+
+        $mockLine = new MoveLine([
+            'quantity'     => $quantity,
+            'price_unit'   => $priceUnit,
+            'discount'     => $discount,
+            'display_type' => DisplayType::PRODUCT,
+        ]);
+
+        $mockLine->setRelation('taxes', Tax::whereIn('id', $taxIds)->get());
+        $mockLine->setRelation('currency', $currency);
+        $mockLine->setRelation('company', $company);
+        $mockLine->setRelation('move', $mockMove);
+
+        $baseLine = TaxFacade::prepareBaseLineForTaxesComputation(
+            $mockLine,
+            priceUnit: $priceUnit,
+            quantity: $quantity,
+            discount: $discount,
+            rate: 1,
+            sign: 1,
+            specialMode: $specialMode,
+        );
+
+        $baseLine = TaxFacade::addTaxDetailsInBaseLine($baseLine, $company);
+
+        $subtotal = (float) ($baseLine['tax_details']['raw_total_excluded_currency'] ?? $rawBase);
+        $total = (float) ($baseLine['tax_details']['raw_total_included_currency'] ?? $rawBase);
+
+        return [
+            'subtotal' => $subtotal,
+            'tax'      => $total - $subtotal,
+            'total'    => $total,
+        ];
     }
 
     public static function getEloquentQuery(): Builder

@@ -246,15 +246,23 @@ class Employee extends Model
         parent::boot();
 
         static::saved(function (self $employee) {
-            $employee->creator_id ??= Auth::id();
-            $employee->ensureUserAccount();
-
-            if (! $employee->partner_id) {
-                $employee->handlePartnerCreation($employee);
-            } else {
-                $employee->handlePartnerUpdation($employee);
-            }
+            $employee->synchronizeHrRecords();
         });
+    }
+
+    /**
+     * Ensure linked User and Partner rows exist so the employee can sign in where applicable.
+     */
+    public function synchronizeHrRecords(): void
+    {
+        $this->creator_id ??= Auth::id();
+        $this->ensureUserAccount();
+
+        if (! $this->partner_id) {
+            $this->handlePartnerCreation($this);
+        } else {
+            $this->handlePartnerUpdation($this);
+        }
     }
 
     private function handlePartnerCreation(self $employee): void

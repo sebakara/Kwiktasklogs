@@ -16,7 +16,6 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Auth;
 use Spatie\Permission\Traits\HasRoles;
 use Webkul\Employee\Models\Department;
@@ -131,34 +130,39 @@ class User extends BaseUser implements FilamentUser, HasAppAuthentication, HasAp
         });
     }
 
-    private function handlePartnerCreation(self $user)
+    private function handlePartnerCreation(self $user): void
     {
-        $partner = $user->partner()->create([
-            'creator_id' => Auth::user()->id ?? $user->id,
-            'user_id'    => $user->id,
-            'sub_type'   => 'partner',
-            ...Arr::except($user->toArray(), ['id', 'partner_id', 'email_verified_at']),
-        ]);
+        $partner = $user->partner()->create($this->attributesForPartnerRecord($user));
 
         $user->partner_id = $partner->id;
         $user->save();
     }
 
-    private function handlePartnerUpdation(self $user)
+    private function handlePartnerUpdation(self $user): void
     {
         $partner = Partner::updateOrCreate(
             ['id' => $user->partner_id],
-            [
-                'creator_id' => Auth::user()->id ?? $user->id,
-                'user_id'    => $user->id,
-                'sub_type'   => 'partner',
-                ...Arr::except($user->toArray(), ['id', 'partner_id', 'email_verified_at']),
-            ]
+            $this->attributesForPartnerRecord($user)
         );
 
         if ($user->partner_id !== $partner->id) {
             $user->partner_id = $partner->id;
             $user->save();
         }
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function attributesForPartnerRecord(self $user): array
+    {
+        return [
+            'creator_id' => Auth::user()->id ?? $user->id,
+            'user_id'    => $user->id,
+            'sub_type'   => 'partner',
+            'name'       => $user->name,
+            'email'      => $user->email,
+            'company_id' => $user->default_company_id,
+        ];
     }
 }

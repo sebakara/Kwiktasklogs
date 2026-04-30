@@ -2,6 +2,7 @@
 
 namespace Webkul\TimeOff\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -13,6 +14,7 @@ use Webkul\Employee\Models\Employee;
 use Webkul\Security\Models\User;
 use Webkul\Support\Models\Company;
 use Webkul\TimeOff\Enums\AllocationType;
+use Webkul\TimeOff\Enums\State;
 
 class LeaveAllocation extends Model
 {
@@ -138,6 +140,14 @@ class LeaveAllocation extends Model
     public function holidayStatus()
     {
         return $this->belongsTo(LeaveType::class, 'holiday_status_id');
+    }
+
+    /**
+     * Allocations that contribute to available leave balance (every state except refused).
+     */
+    public function scopeForAvailableBalance(Builder $query): Builder
+    {
+        return $query->whereNot('state', State::REFUSE->value);
     }
 
     protected static function boot()
