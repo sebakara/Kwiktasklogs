@@ -42,6 +42,7 @@ return [
 
                         'columns' => [
                             'product'             => 'Product',
+                            'project'             => 'Project',
                             'quantity'            => 'Quantity',
                             'unit'                => 'Unit',
                             'taxes'               => 'Taxes',
@@ -51,7 +52,13 @@ return [
                         ],
 
                         'fields' => [
-                            'product'             => 'Product',
+                            'product'                  => 'Product',
+                            'project'                  => 'Project',
+                            'project-tax-mode'         => 'Project Tax Mode',
+                            'project-tax-mode-options' => [
+                                'tax-excluded' => 'Tax Excluded',
+                                'tax-included' => 'Tax Included',
+                            ],
                             'quantity'            => 'Quantity',
                             'unit'                => 'Unit',
                             'taxes'               => 'Taxes',
@@ -219,6 +226,7 @@ return [
                     'products' => [
                         'entries' => [
                             'product'             => 'Product',
+                            'project'             => 'Project',
                             'quantity'            => 'Quantity',
                             'unit'                => 'Unit Of Measure',
                             'taxes'               => 'Taxes',

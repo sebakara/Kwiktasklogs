@@ -44,6 +44,7 @@ class MoveLine extends Model implements Sortable
         'statement_id',
         'statement_line_id',
         'product_id',
+        'project_id',
         'uom_id',
         'creator_id',
         'move_name',

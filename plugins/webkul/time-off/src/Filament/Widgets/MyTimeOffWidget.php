@@ -8,7 +8,6 @@ use Filament\Widgets\StatsOverviewWidget as BaseWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
-use Webkul\TimeOff\Enums\State;
 use Webkul\TimeOff\Models\Leave;
 use Webkul\TimeOff\Models\LeaveAllocation;
 use Webkul\TimeOff\Models\LeaveType;
@@ -57,7 +56,7 @@ class MyTimeOffWidget extends BaseWidget
     {
         $totalAllocated = LeaveAllocation::where('employee_id', $employeeId)
             ->where('holiday_status_id', $leaveTypeId)
-            ->where('state', State::VALIDATE_TWO->value)
+            ->forAvailableBalance()
             ->where(function ($query) use ($endDate) {
                 $query->where('date_to', '<=', $endDate)
                     ->orWhereNull('date_to');

@@ -17,6 +17,7 @@ return [
             'date-to'          => 'End Date',
             'color'            => 'Color',
             'calendar'         => 'Calendar',
+            'calendar-helper'  => 'Leave empty to apply this holiday to every work calendar in the company (all employees who use those calendars). Pick one calendar to limit the holiday to that schedule only.',
         ],
     ],
 

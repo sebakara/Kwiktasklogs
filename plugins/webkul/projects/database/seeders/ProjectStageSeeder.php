@@ -13,43 +13,65 @@ class ProjectStageSeeder extends Seeder
      */
     public function run(): void
     {
-        DB::table('projects_project_stages')->delete();
-
         $user = User::first();
+        $now = now();
+        $requiredStages = [
+            'Brain shorming',
+            'Architecture design',
+            'development',
+            'Testing',
+            'Deployment',
+            'Maintenance',
+        ];
 
-        DB::table('projects_project_stages')->insert([
-            [
-                'name'       => 'To Do',
+        $existingStageIds = DB::table('projects_project_stages')
+            ->orderBy('sort')
+            ->orderBy('id')
+            ->pluck('id')
+            ->values();
+
+        $keptStageIds = [];
+
+        foreach ($requiredStages as $index => $stageName) {
+            $stagePayload = [
+                'name'       => $stageName,
                 'is_active'  => 1,
-                'sort'       => 1,
+                'sort'       => $index + 1,
                 'creator_id' => $user?->id,
-                'created_at' => now(),
-                'updated_at' => now(),
-            ],
-            [
-                'name'       => 'In Progress',
-                'is_active'  => 1,
-                'sort'       => 2,
-                'creator_id' => $user?->id,
-                'created_at' => now(),
-                'updated_at' => now(),
-            ],
-            [
-                'name'       => 'Done',
-                'is_active'  => 1,
-                'sort'       => 3,
-                'creator_id' => $user?->id,
-                'created_at' => now(),
-                'updated_at' => now(),
-            ],
-            [
-                'name'       => 'Cancelled',
-                'is_active'  => 1,
-                'sort'       => 4,
-                'creator_id' => $user?->id,
-                'created_at' => now(),
-                'updated_at' => now(),
-            ],
-        ]);
+                'updated_at' => $now,
+            ];
+
+            $existingStageId = $existingStageIds->get($index);
+
+            if ($existingStageId) {
+                DB::table('projects_project_stages')
+                    ->where('id', $existingStageId)
+                    ->update($stagePayload);
+
+                $keptStageIds[] = $existingStageId;
+
+                continue;
+            }
+
+            $keptStageIds[] = DB::table('projects_project_stages')->insertGetId([
+                ...$stagePayload,
+                'created_at' => $now,
+            ]);
+        }
+
+        if ($keptStageIds === []) {
+            return;
+        }
+
+        DB::table('projects_projects')
+            ->whereNotIn('stage_id', $keptStageIds)
+            ->update([
+                'stage_id'    => $keptStageIds[0],
+                'updated_at'  => $now,
+            ]);
+
+        DB::table('projects_project_stages')
+            ->whereNotIn('id', $keptStageIds)
+            ->delete();
     }
 }
