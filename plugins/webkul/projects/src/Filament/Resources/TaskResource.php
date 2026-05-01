@@ -30,6 +30,7 @@ use Filament\Resources\RelationManagers\RelationGroup;
 use Filament\Resources\Resource;
 use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Group;
+use Filament\Schemas\Components\Livewire;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Components\Utilities\Set;
@@ -52,6 +53,7 @@ use Filament\Tables\Filters\QueryBuilder\Constraints\TextConstraint;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use Webkul\Chatter\Livewire\ChatterPanel;
 use Webkul\Field\Filament\Traits\HasCustomFields;
 use Webkul\Partner\Filament\Resources\PartnerResource;
 use Webkul\Project\Enums\TaskState;
@@ -72,6 +74,7 @@ use Webkul\Project\Settings\TimeSettings;
 use Webkul\Security\Filament\Resources\UserResource;
 use Webkul\Security\Traits\HasResourcePermissionQuery;
 use Webkul\Support\Filament\Tables\Columns\ProgressBarEntry;
+use Webkul\Support\Models\ActivityPlan;
 
 class TaskResource extends Resource
 {
@@ -869,6 +872,22 @@ class TaskResource extends Resource
                                     ->state(fn (Task $record): int => $record->timesheets()->count())
                                     ->icon('heroicon-o-clock')
                                     ->visible(static::getTimeSettings()->enable_timesheets),
+                            ]),
+
+                        Section::make('Task Discussion')
+                            ->description('Reply, comment, and assign follow-up actions for review, revision, or debugging.')
+                            ->schema([
+                                Livewire::make(ChatterPanel::class, fn (Task $record): array => [
+                                    'record'                  => $record,
+                                    'resourceClass'           => static::class,
+                                    'activityPlans'           => ActivityPlan::query()->where('plugin', 'projects')->pluck('name', 'id'),
+                                    'inModal'                 => false,
+                                    'isMessageActionVisible'  => true,
+                                    'isLogActionVisible'      => true,
+                                    'isActivityActionVisible' => true,
+                                    'isFileActionVisible'     => true,
+                                    'isFollowerActionVisible' => true,
+                                ]),
                             ]),
                     ])
                     ->columnSpan(['lg' => 1]),

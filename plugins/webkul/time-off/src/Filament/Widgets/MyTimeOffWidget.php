@@ -8,6 +8,7 @@ use Filament\Widgets\StatsOverviewWidget as BaseWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
+use Webkul\TimeOff\Enums\State;
 use Webkul\TimeOff\Models\Leave;
 use Webkul\TimeOff\Models\LeaveAllocation;
 use Webkul\TimeOff\Models\LeaveType;
@@ -69,7 +70,7 @@ class MyTimeOffWidget extends BaseWidget
                 $query->where('request_date_to', '<=', $endDate)
                     ->orWhereNull('request_date_to');
             })
-            ->where('state', '!=', 'refuse')
+            ->where('state', State::VALIDATE_TWO->value)
             ->sum('number_of_days');
 
         $availableDays = $totalAllocated - $totalTaken;
