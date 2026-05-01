@@ -68,6 +68,7 @@ use Webkul\Employee\Filament\Resources\EmployeeResource\Pages\CreateEmployee;
 use Webkul\Employee\Filament\Resources\EmployeeResource\Pages\EditEmployee;
 use Webkul\Employee\Filament\Resources\EmployeeResource\Pages\ListEmployees;
 use Webkul\Employee\Filament\Resources\EmployeeResource\Pages\ManageResume;
+use Webkul\Employee\Filament\Resources\EmployeeResource\Pages\ManageReviews;
 use Webkul\Employee\Filament\Resources\EmployeeResource\Pages\ManageSkill;
 use Webkul\Employee\Filament\Resources\EmployeeResource\Pages\ViewEmployee;
 use Webkul\Employee\Filament\Resources\EmployeeResource\RelationManagers\ResumeRelationManager;
@@ -1783,6 +1784,7 @@ class EmployeeResource extends Resource
             EditEmployee::class,
             ManageSkill::class,
             ManageResume::class,
+            ManageReviews::class,
         ]);
     }
 
@@ -1816,6 +1818,7 @@ class EmployeeResource extends Resource
             'view'    => ViewEmployee::route('/{record}'),
             'skills'  => ManageSkill::route('/{record}/skills'),
             'resumes' => ManageResume::route('/{record}/resumes'),
+            'reviews' => ManageReviews::route('/{record}/reviews'),
         ];
     }
 }
