@@ -221,6 +221,11 @@ class Employee extends Model
         return $this->hasMany(EmployeeResume::class, 'employee_id');
     }
 
+    public function reviews(): HasMany
+    {
+        return $this->hasMany(EmployeeReview::class, 'employee_id');
+    }
+
     protected static function newFactory(): EmployeeFactory
     {
         return EmployeeFactory::new();

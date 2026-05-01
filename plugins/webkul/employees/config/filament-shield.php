@@ -9,6 +9,7 @@ use Webkul\Employee\Filament\Clusters\Configurations\Resources\JobPositionResour
 use Webkul\Employee\Filament\Clusters\Configurations\Resources\SkillTypeResource;
 use Webkul\Employee\Filament\Clusters\Configurations\Resources\WorkLocationResource;
 use Webkul\Employee\Filament\Clusters\Reportings;
+use Webkul\Employee\Filament\Clusters\Reportings\Resources\EmployeeReviewResource;
 use Webkul\Employee\Filament\Clusters\Reportings\Resources\EmployeeSkillResource;
 use Webkul\Employee\Filament\Resources\DepartmentResource;
 use Webkul\Employee\Filament\Resources\EmployeeResource;
@@ -25,6 +26,7 @@ return [
             EmployeeResource::class => [...$basic, ...$delete, ...$restore, ...$forceDelete],
             DepartmentResource::class => [...$basic, ...$delete, ...$restore, ...$forceDelete],
             EmployeeSkillResource::class => [...$basic, ...$delete, ...$restore, ...$forceDelete],
+            EmployeeReviewResource::class => [...$basic, ...$delete, ...$restore, ...$forceDelete],
             ActivityPlanResource::class => [...$basic, ...$delete, ...$restore, ...$forceDelete],
             DepartureReasonResource::class => [...$basic, ...$delete, ...$reorder],
             EmployeeCategoryResource::class => [...$basic, ...$delete],
