@@ -5,12 +5,15 @@ namespace Webkul\TimeOff\Traits;
 use Carbon\Carbon;
 use Filament\Actions\Action;
 use Filament\Forms\Components\DatePicker;
+use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\Toggle;
 use Filament\Notifications\Notification;
 use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Section;
+use Filament\Schemas\Components\Utilities\Get;
+use Filament\Schemas\Components\Utilities\Set;
 use Illuminate\Support\Facades\Auth;
 use Webkul\Employee\Models\Employee;
 use Webkul\TimeOff\Enums\RequestDateFromPeriod;
@@ -47,24 +50,73 @@ trait TimeOffHelper
                         ->relationship('employee', 'name')
                         ->searchable()
                         ->preload()
+                        ->live()
+                        ->afterStateUpdated(function (Set $set, $state): void {
+                            $employee = $state ? Employee::query()->with('department')->find($state) : null;
+                            $set('department_id', $employee?->department?->id);
+                        })
                         ->visible((bool) ($isVisible ?? false))
                         ->label(__('time-off::filament/clusters/management/resources/time-off.form.fields.employee-name'))
                         ->required(),
                     Select::make('department_id')
-                        ->relationship('department', 'name')
+                        ->options(function (Get $get): array {
+                            $employeeId = $get('employee_id');
+
+                            if (! $employeeId) {
+                                return [];
+                            }
+
+                            $employee = Employee::query()->with('department')->find($employeeId);
+
+                            if (! $employee?->department) {
+                                return [];
+                            }
+
+                            return [$employee->department->id => $employee->department->name];
+                        })
                         ->label(__('time-off::filament/clusters/management/resources/time-off.form.fields.department-name'))
                         ->searchable()
                         ->visible((bool) ($isVisible ?? false))
                         ->preload()
+                        ->disabled(fn (Get $get): bool => blank($get('employee_id')))
                         ->required(),
 
                     Select::make('holiday_status_id')
                         ->label(__('time-off::filament/widgets/calendar-widget.form.fields.time-off-type'))
                         ->relationship('holidayStatus', 'name')
                         ->required()
+                        ->live()
                         ->columnSpanFull()
                         ->placeholder(__('time-off::filament/widgets/calendar-widget.form.fields.time-off-type-placeholder'))
                         ->helperText(__('time-off::filament/widgets/calendar-widget.form.fields.time-off-type-helper')),
+                    Placeholder::make('leave_balance')
+                        ->label('Leave Balance')
+                        ->content(function (Get $get): string {
+                            $employeeId = $get('employee_id') ?: Auth::user()?->employee?->id;
+                            $leaveTypeId = $get('holiday_status_id');
+
+                            if (! $employeeId || ! $leaveTypeId) {
+                                return 'Select an employee and time off type to view balance.';
+                            }
+
+                            $balance = $this->getAvailableLeaveBalance((int) $employeeId, (int) $leaveTypeId);
+
+                            if (! $balance['requires_allocation']) {
+                                return 'This leave type does not require allocation.';
+                            }
+
+                            $requestedDays = $this->getRequestedDaysFromFormState($get);
+                            $remainingAfterRequest = round($balance['available'] - $requestedDays, 1);
+
+                            return "Allocated: {$balance['allocated']} days | Taken: {$balance['taken']} days | Available: {$balance['available']} days | Requested: {$requestedDays} days | Remaining after request: {$remainingAfterRequest} days";
+                        }),
+                    Placeholder::make('requested_days_preview')
+                        ->label('Requested Leave')
+                        ->content(function (Get $get): string {
+                            $requestedDays = $this->getRequestedDaysFromFormState($get);
+
+                            return "You are requesting {$requestedDays} day(s).";
+                        }),
 
                     Grid::make(2)
                         ->schema([
@@ -72,11 +124,13 @@ trait TimeOffHelper
                                 ->native(false)
                                 ->label(__('time-off::filament/widgets/calendar-widget.form.fields.request-date-from'))
                                 ->required()
+                                ->live()
                                 ->prefixIcon('heroicon-o-calendar'),
 
                             DatePicker::make('request_date_to')
                                 ->native(false)
                                 ->label('To Date')
+                                ->live()
                                 ->prefixIcon('heroicon-o-calendar'),
                         ]),
 
@@ -84,6 +138,7 @@ trait TimeOffHelper
                         ->schema([
                             Toggle::make('request_unit_half')
                                 ->label(__('time-off::filament/widgets/calendar-widget.form.fields.half-day'))
+                                ->live()
                                 ->helperText(__('time-off::filament/widgets/calendar-widget.form.fields.half-day-helper')),
 
                             Select::make('request_date_from_period')
@@ -203,24 +258,9 @@ trait TimeOffHelper
         }
 
         $requestedDays = $data['number_of_days'];
-        $endOfYear = Carbon::now()->endOfYear();
-
-        $totalAllocated = LeaveAllocation::where('employee_id', $employee->id)
-            ->where('holiday_status_id', $leaveTypeId)
-            ->forAvailableBalance()
-            ->where(function ($q) use ($endOfYear) {
-                $q->where('date_to', '<=', $endOfYear)
-                    ->orWhereNull('date_to');
-            })
-            ->sum('number_of_days');
-
-        $totalTaken = Leave::where('employee_id', $employee->id)
-            ->where('holiday_status_id', $leaveTypeId)
-            ->where('state', '!=', State::REFUSE->value)
-            ->where(fn ($q) => true)
-            ->sum('number_of_days');
-
-        $availableBalance = round($totalAllocated - $totalTaken, 1);
+        $balance = $this->getAvailableLeaveBalance($employee->id, (int) $leaveTypeId);
+        $totalAllocated = $balance['allocated'];
+        $availableBalance = $balance['available'];
 
         if ($totalAllocated <= 0) {
             Notification::make()
@@ -252,6 +292,61 @@ trait TimeOffHelper
                 $this->halt();
             }
         }
+    }
+
+    private function getAvailableLeaveBalance(int $employeeId, int $leaveTypeId): array
+    {
+        $leaveType = LeaveType::find($leaveTypeId);
+
+        if (! $leaveType || ! $leaveType->requires_allocation) {
+            return [
+                'allocated'           => 0.0,
+                'taken'               => 0.0,
+                'available'           => 0.0,
+                'requires_allocation' => false,
+            ];
+        }
+
+        $endOfYear = Carbon::now()->endOfYear();
+
+        $totalAllocated = LeaveAllocation::where('employee_id', $employeeId)
+            ->where('holiday_status_id', $leaveTypeId)
+            ->forAvailableBalance()
+            ->where(function ($query) use ($endOfYear) {
+                $query->where('date_to', '<=', $endOfYear)
+                    ->orWhereNull('date_to');
+            })
+            ->sum('number_of_days');
+
+        $totalTaken = Leave::where('employee_id', $employeeId)
+            ->where('holiday_status_id', $leaveTypeId)
+            ->where('state', State::VALIDATE_TWO->value)
+            ->sum('number_of_days');
+
+        return [
+            'allocated'           => round((float) $totalAllocated, 1),
+            'taken'               => round((float) $totalTaken, 1),
+            'available'           => round((float) ($totalAllocated - $totalTaken), 1),
+            'requires_allocation' => true,
+        ];
+    }
+
+    private function getRequestedDaysFromFormState(Get $get): float
+    {
+        $requestDateFrom = $get('request_date_from');
+
+        if (! $requestDateFrom) {
+            return 0.0;
+        }
+
+        if ((bool) $get('request_unit_half')) {
+            return 0.5;
+        }
+
+        $start = Carbon::parse($requestDateFrom);
+        $end = $get('request_date_to') ? Carbon::parse($get('request_date_to')) : $start;
+
+        return (float) $this->calculateBusinessDays($start, $end);
     }
 
     private function calculateBusinessDays(Carbon $start, Carbon $end): int

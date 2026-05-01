@@ -22,6 +22,8 @@ use Filament\Schemas\Components\Fieldset;
 use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Group;
 use Filament\Schemas\Components\Section;
+use Filament\Schemas\Components\Utilities\Get;
+use Filament\Schemas\Components\Utilities\Set;
 use Filament\Schemas\Schema;
 use Filament\Tables;
 use Filament\Tables\Columns\TextColumn;
@@ -37,6 +39,7 @@ use Webkul\TimeOff\Filament\Clusters\Management\Resources\AllocationResource\Pag
 use Webkul\TimeOff\Filament\Clusters\Management\Resources\AllocationResource\Pages\ListAllocations;
 use Webkul\TimeOff\Filament\Clusters\Management\Resources\AllocationResource\Pages\ViewAllocation;
 use Webkul\TimeOff\Models\LeaveAllocation;
+use Webkul\TimeOff\Models\LeaveType;
 
 class AllocationResource extends Resource
 {
@@ -117,6 +120,8 @@ class AllocationResource extends Resource
                                             ->relationship('holidayStatus', 'name')
                                             ->searchable()
                                             ->preload()
+                                            ->live()
+                                            ->afterStateUpdated(fn (Set $set, Get $get) => $set('name', static::generateAllocationName($get)))
                                             ->required(),
                                         Select::make('employee_id')
                                             ->label(__('time-off::filament/clusters/management/resources/allocation.form.fields.employee-name'))
@@ -136,10 +141,14 @@ class AllocationResource extends Resource
                                             ->label(__('time-off::filament/clusters/management/resources/allocation.form.fields.date-from'))
                                             ->native(false)
                                             ->required()
+                                            ->live()
+                                            ->afterStateUpdated(fn (Set $set, Get $get) => $set('name', static::generateAllocationName($get)))
                                             ->default(now()),
                                         DatePicker::make('date_to')
                                             ->label(__('time-off::filament/clusters/management/resources/allocation.form.fields.date-to'))
                                             ->native(false)
+                                            ->live()
+                                            ->afterStateUpdated(fn (Set $set, Get $get) => $set('name', static::generateAllocationName($get)))
                                             ->placeholder(__('time-off::filament/clusters/management/resources/allocation.form.fields.date-to-placeholder')),
                                     ]),
                                 TextInput::make('number_of_days')
@@ -351,5 +360,21 @@ class AllocationResource extends Resource
             'edit'   => EditAllocation::route('/{record}/edit'),
             'view'   => ViewAllocation::route('/{record}'),
         ];
+    }
+
+    protected static function generateAllocationName(Get $get): string
+    {
+        $leaveTypeName = LeaveType::find($get('holiday_status_id'))?->name ?? 'Time Off';
+        $startDate = $get('date_from');
+        $endDate = $get('date_to');
+
+        if (! $startDate) {
+            return $leaveTypeName;
+        }
+
+        $from = date('Y-m-d', strtotime((string) $startDate));
+        $to = $endDate ? date('Y-m-d', strtotime((string) $endDate)) : 'no limit';
+
+        return "{$leaveTypeName} ({$from} to {$to})";
     }
 }

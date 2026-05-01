@@ -2,6 +2,7 @@
 
 namespace Webkul\TimeOff\Models;
 
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -140,6 +141,45 @@ class LeaveAllocation extends Model
     public function holidayStatus()
     {
         return $this->belongsTo(LeaveType::class, 'holiday_status_id');
+    }
+
+    public function getTakenDaysAttribute(): float
+    {
+        if (! $this->employee_id || ! $this->holiday_status_id) {
+            return 0.0;
+        }
+
+        $endOfYear = Carbon::now()->endOfYear();
+
+        return round((float) Leave::where('employee_id', $this->employee_id)
+            ->where('holiday_status_id', $this->holiday_status_id)
+            ->where(function ($query) use ($endOfYear) {
+                $query->where('request_date_to', '<=', $endOfYear)
+                    ->orWhereNull('request_date_to');
+            })
+            ->where('state', State::VALIDATE_TWO->value)
+            ->sum('number_of_days'), 1);
+    }
+
+    public function getAvailableBalanceDaysAttribute(): float
+    {
+        if (! $this->employee_id || ! $this->holiday_status_id) {
+            return 0.0;
+        }
+
+        $endOfYear = Carbon::now()->endOfYear();
+
+        $totalAllocated = static::query()
+            ->where('employee_id', $this->employee_id)
+            ->where('holiday_status_id', $this->holiday_status_id)
+            ->forAvailableBalance()
+            ->where(function ($query) use ($endOfYear) {
+                $query->where('date_to', '<=', $endOfYear)
+                    ->orWhereNull('date_to');
+            })
+            ->sum('number_of_days');
+
+        return round((float) $totalAllocated - $this->taken_days, 1);
     }
 
     /**
