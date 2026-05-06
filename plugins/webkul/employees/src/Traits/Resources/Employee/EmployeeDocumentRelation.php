@@ -67,16 +67,10 @@ trait EmployeeDocumentRelation
                         })
                         ->openable()
                         ->downloadable(),
-                    FileUpload::make('signed_file_path')
-                        ->label('Signed file')
-                        ->disk('public_root')
-                        ->directory('employees/documents/signed')
-                        ->visibility('public')
-                        ->preserveFilenames()
-                        ->openable()
-                        ->downloadable(),
                     DateTimePicker::make('sent_at')
-                        ->seconds(false),
+                        ->label('Sent at')
+                        ->default(now())
+                        ->seconds(true),
                     DateTimePicker::make('signed_at')
                         ->seconds(false),
                     Textarea::make('notes')
@@ -132,6 +126,7 @@ trait EmployeeDocumentRelation
                     ->mutateDataUsing(function (array $data): array {
                         $data['creator_id'] = Auth::id();
                         $data['requested_by_user_id'] ??= Auth::id();
+                        $data['sent_at'] ??= now();
 
                         return $data;
                     })
@@ -143,13 +138,22 @@ trait EmployeeDocumentRelation
             ])
             ->recordActions([
                 Action::make('viewDocument')
-                    ->label('View')
+                    ->label('View original')
                     ->icon('heroicon-o-eye')
                     ->color('gray')
                     ->iconButton()
-                    ->tooltip('View document')
+                    ->tooltip('View original document')
                     ->visible(fn ($record): bool => ! empty($record->original_file_path))
                     ->url(fn ($record): string => $this->resolveDocumentUrl($record->original_file_path))
+                    ->openUrlInNewTab(),
+                Action::make('viewSignedDocument')
+                    ->label('View signed')
+                    ->icon('heroicon-o-document-check')
+                    ->color('success')
+                    ->iconButton()
+                    ->tooltip('View signed document')
+                    ->visible(fn ($record): bool => ! empty($record->signed_file_path))
+                    ->url(fn ($record): string => $this->resolveDocumentUrl($record->signed_file_path))
                     ->openUrlInNewTab(),
                 Action::make('signDocument')
                     ->label('Sign')
@@ -503,6 +507,16 @@ trait EmployeeDocumentRelation
     {
         if (! $employee) {
             return false;
+        }
+
+        $authenticatedUser = Auth::user();
+
+        if (! $authenticatedUser) {
+            return false;
+        }
+
+        if ((int) ($employee->user_id ?? 0) === (int) $authenticatedUser->id) {
+            return true;
         }
 
         return $this->emailEqualsAuthenticatedUser($employee->work_email)

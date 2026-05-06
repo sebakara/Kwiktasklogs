@@ -50,6 +50,7 @@ class Employee extends Model
         'bank_account_id',
         'bank_name',
         'bank_account_number',
+        'bank_account_holder_name',
         'departure_reason_id',
         'name',
         'job_title',
@@ -302,6 +303,51 @@ class Employee extends Model
         } else {
             $this->handlePartnerUpdation($this);
         }
+
+        $this->pushSharedEmployeeIdentityToUser();
+    }
+
+    /**
+     * Keep identity fields aligned with the linked login user (name, active flag, work email).
+     * Uses a normal {@see User::save()} when changes exist so the user's partner record stays in sync.
+     */
+    private function pushSharedEmployeeIdentityToUser(): void
+    {
+        if (! $this->user_id) {
+            return;
+        }
+
+        $user = User::query()->find($this->user_id);
+
+        if (! $user instanceof User) {
+            return;
+        }
+
+        $empName = trim((string) ($this->name ?? ''));
+        if ($empName !== '') {
+            $user->name = $empName;
+        }
+
+        $user->is_active = (bool) $this->is_active;
+
+        $work = trim((string) ($this->work_email ?? ''));
+        if ($work !== '' && filter_var($work, FILTER_VALIDATE_EMAIL)) {
+            $workLower = strtolower($work);
+            if (strtolower((string) $user->email) !== $workLower) {
+                $emailTaken = User::query()
+                    ->whereRaw('LOWER(email) = ?', [$workLower])
+                    ->whereKeyNot($user->id)
+                    ->exists();
+
+                if (! $emailTaken) {
+                    $user->email = $workLower;
+                }
+            }
+        }
+
+        if ($user->isDirty()) {
+            $user->save();
+        }
     }
 
     private function handlePartnerCreation(self $employee): void
@@ -400,20 +446,14 @@ class Employee extends Model
         $this->sendEmployeeInvitation($user);
     }
 
-    private function ensureEmployeeRole(?User $user): void
+    /**
+     * Ensure a user has the built-in Employee role. Employee-linked accounts must not
+     * receive {@see UserSettings::$default_role_id} (often HR/admin), or every new hire would inherit that role.
+     */
+    public static function assignEmployeeRoleToUser(User $user): void
     {
-        if (! $user) {
-            return;
-        }
-
-        $defaultRoleId = app(UserSettings::class)->default_role_id;
-
-        if ($defaultRoleId && ! $user->roles()->whereKey($defaultRoleId)->exists()) {
-            $user->assignRole($defaultRoleId);
-        }
-
         $employeeRole = Role::query()
-            ->whereRaw('LOWER(name) = ?', ['employee'])
+            ->whereRaw('LOWER(TRIM(name)) = ?', ['employee'])
             ->first();
 
         if (! $employeeRole) {
@@ -425,6 +465,15 @@ class Employee extends Model
         }
 
         $user->assignRole($employeeRole);
+    }
+
+    private function ensureEmployeeRole(?User $user): void
+    {
+        if (! $user) {
+            return;
+        }
+
+        self::assignEmployeeRoleToUser($user);
     }
 
     private function ensureUserAccessContext(?User $user): void

@@ -395,8 +395,25 @@ class UserResource extends Resource
                         ),
                     ForceDeleteBulkAction::make()
                         ->action(function (Collection $records) {
+                            $users = $records->filter(static fn (Model $record): bool => $record instanceof User)->values();
+
                             try {
-                                $records->each(fn (Model $record) => $record->forceDelete());
+                                $allowed = $users->filter(static fn (User $user): bool => self::canDeleteUser($user));
+                                $skipped = $users->count() - $allowed->count();
+
+                                if ($skipped > 0) {
+                                    Notification::make()
+                                        ->warning()
+                                        ->title(__('security::filament/resources/user.table.bulk-actions.force-delete.notification.skipped.title'))
+                                        ->body(__('security::filament/resources/user.table.bulk-actions.force-delete.notification.skipped.body', ['count' => $skipped]))
+                                        ->send();
+                                }
+
+                                if ($allowed->isEmpty()) {
+                                    return;
+                                }
+
+                                $allowed->each(static fn (User $user) => $user->forceDelete());
                             } catch (QueryException $e) {
                                 Notification::make()
                                     ->danger()
@@ -523,7 +540,9 @@ class UserResource extends Resource
 
     public static function canDeleteUser(User $record): bool
     {
-        return ! $record->is_default && $record->id !== Auth::id();
+        return ! $record->is_default
+            && $record->id !== Auth::id()
+            && ! $record->isNonDeletableAccount();
     }
 
     public static function ensureAdminRoleConstraints(?User $record, array $roleIds): void

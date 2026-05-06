@@ -2,8 +2,10 @@
 
 namespace Webkul\Security\Livewire;
 
+use App\Filament\Auth\AdminLandingUrl;
 use Filament\Actions\Action;
 use Filament\Actions\ActionGroup;
+use Filament\Facades\Filament;
 use Filament\Forms\Components\Checkbox;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Textarea;
@@ -11,10 +13,11 @@ use Filament\Forms\Components\TextInput;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Pages\Concerns\InteractsWithFormActions;
 use Filament\Pages\SimplePage;
+use Filament\Schemas\Components\Grid;
+use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Illuminate\Validation\Rules\Password;
 use Webkul\Employee\Models\Employee;
-use Webkul\Project\Filament\Pages\Dashboard;
 use Webkul\Security\Models\Invitation;
 use Webkul\Security\Models\User;
 use Webkul\Security\Settings\UserSettings;
@@ -40,19 +43,34 @@ class AcceptInvitation extends SimplePage
             ->orWhere('private_email', $this->invitationModel->email)
             ->first();
         $existingUser = User::withTrashed()->where('email', $this->invitationModel->email)->first();
-        $fullName = $employee?->name ?: $existingUser?->name ?: $this->invitationModel->email;
+
+        $resolvedName = '';
+        if ($employee !== null && trim((string) ($employee->name ?? '')) !== '') {
+            $resolvedName = trim((string) $employee->name);
+        } elseif ($existingUser !== null && trim((string) ($existingUser->name ?? '')) !== '') {
+            $resolvedName = trim((string) $existingUser->name);
+        }
+
+        if ($resolvedName === '') {
+            $inviteEmail = (string) $this->invitationModel->email;
+            $atPos = strpos($inviteEmail, '@');
+            $resolvedName = $atPos !== false
+                ? substr($inviteEmail, 0, $atPos)
+                : $inviteEmail;
+        }
 
         $this->form->fill([
-            'name'                       => $fullName,
-            'email'                      => $this->invitationModel->email,
-            'phone_number'               => $employee?->mobile_phone,
-            'address'                    => $employee?->private_street1,
-            'nid'                        => $employee?->identification_id,
-            'bank_name'                  => $employee?->bank_name,
-            'bank_account_number'        => $employee?->bank_account_number,
-            'emergency_contact_name'     => $employee?->emergency_contact,
-            'emergency_contact_phone'    => $employee?->emergency_phone,
-            'emergency_contact_relation' => $employee?->emergency_contact_relation,
+            'name'                        => $resolvedName,
+            'email'                       => $this->invitationModel->email,
+            'phone_number'                => $employee?->mobile_phone,
+            'address'                     => $employee?->private_street1,
+            'nid'                         => $employee?->identification_id,
+            'bank_name'                   => $employee?->bank_name,
+            'bank_account_holder_name'    => $employee?->bank_account_holder_name,
+            'bank_account_number'         => $employee?->bank_account_number,
+            'emergency_contact_name'      => $employee?->emergency_contact,
+            'emergency_contact_phone'     => $employee?->emergency_phone,
+            'emergency_contact_relation'  => $employee?->emergency_contact_relation,
         ]);
     }
 
@@ -60,19 +78,36 @@ class AcceptInvitation extends SimplePage
     {
         return $schema
             ->components([
-                TextInput::make('name')
-                    ->label(__('security::livewire/accept-invitation.form.name.label'))
-                    ->required()
-                    ->readOnly()
-                    ->maxLength(255)
-                    ->autofocus(),
+                Section::make(__('security::livewire/accept-invitation.form.section.employer_provided.label'))
+                    ->description(__('security::livewire/accept-invitation.form.section.employer_provided.description'))
+                    ->schema([
+                        Grid::make([
+                            'default' => 1,
+                            'sm'      => 2,
+                        ])
+                            ->schema([
+                                TextInput::make('name')
+                                    ->label(__('security::livewire/accept-invitation.form.name.label'))
+                                    ->helperText(__('security::livewire/accept-invitation.form.name.helper'))
+                                    ->required()
+                                    ->readOnly()
+                                    ->dehydrated(true)
+                                    ->maxLength(255)
+                                    ->autofocus(),
+                                TextInput::make('email')
+                                    ->label(__('security::livewire/accept-invitation.form.email.label'))
+                                    ->helperText(__('security::livewire/accept-invitation.form.email.helper'))
+                                    ->email()
+                                    ->required()
+                                    ->readOnly()
+                                    ->dehydrated(true)
+                                    ->maxLength(255),
+                            ]),
+                    ]),
                 TextInput::make('nid')
                     ->label('NID (National ID)')
                     ->required()
                     ->maxLength(255),
-                TextInput::make('email')
-                    ->label(__('security::livewire/accept-invitation.form.email.label'))
-                    ->disabled(),
                 TextInput::make('password')
                     ->label(__('security::livewire/accept-invitation.form.password.label'))
                     ->password()
@@ -93,26 +128,42 @@ class AcceptInvitation extends SimplePage
                     ->label('Address')
                     ->required()
                     ->rows(3),
-                TextInput::make('bank_name')
-                    ->label('Bank name')
-                    ->required()
-                    ->maxLength(255),
-                TextInput::make('bank_account_number')
-                    ->label('Account number')
-                    ->required()
-                    ->maxLength(255),
+                Section::make(__('security::livewire/accept-invitation.form.section.banking.label'))
+                    ->description(__('security::livewire/accept-invitation.form.section.banking.description'))
+                    ->schema([
+                        Grid::make([
+                            'default' => 1,
+                            'md'      => 3,
+                        ])
+                            ->schema([
+                                TextInput::make('bank_name')
+                                    ->label(__('security::livewire/accept-invitation.form.bank.bank_name'))
+                                    ->required()
+                                    ->maxLength(255),
+                                TextInput::make('bank_account_holder_name')
+                                    ->label(__('security::livewire/accept-invitation.form.bank.account_name'))
+                                    ->required()
+                                    ->maxLength(255),
+                                TextInput::make('bank_account_number')
+                                    ->label(__('security::livewire/accept-invitation.form.bank.account_number'))
+                                    ->required()
+                                    ->maxLength(255),
+                            ]),
+                    ]),
                 FileUpload::make('passport_image_path')
                     ->label('Passport image upload')
                     ->image()
                     ->disk('public_root')
                     ->directory('employees/onboarding/passport')
-                    ->required(),
+                    ->required()
+                    ->rules(['required']),
                 FileUpload::make('national_id_file_path')
                     ->label('NID upload')
                     ->disk('public_root')
                     ->acceptedFileTypes(['image/*', 'application/pdf'])
                     ->directory('employees/onboarding/nid')
-                    ->required(),
+                    ->required()
+                    ->rules(['required']),
                 TextInput::make('emergency_contact_name')
                     ->label('Emergency contact name')
                     ->required()
@@ -136,6 +187,9 @@ class AcceptInvitation extends SimplePage
     public function create(): void
     {
         $this->invitationModel = Invitation::findOrFail($this->invitation);
+
+        $this->form->validate();
+
         $state = $this->form->getState();
 
         $user = User::withTrashed()
@@ -172,6 +226,7 @@ class AcceptInvitation extends SimplePage
                 'mobile_phone'               => $state['phone_number'],
                 'private_street1'            => $state['address'],
                 'bank_name'                  => $state['bank_name'],
+                'bank_account_holder_name'   => $state['bank_account_holder_name'],
                 'bank_account_number'        => $state['bank_account_number'],
                 'passport_image_path'        => $state['passport_image_path'] ?? null,
                 'national_id_file_path'      => $state['national_id_file_path'] ?? null,
@@ -183,15 +238,22 @@ class AcceptInvitation extends SimplePage
             ]);
         }
 
-        $defaultRoleId = app(UserSettings::class)->default_role_id;
+        if ($employee) {
+            Employee::assignEmployeeRoleToUser($user);
+        } else {
+            $defaultRoleId = app(UserSettings::class)->default_role_id;
 
-        if ($defaultRoleId && ! $user->roles()->whereKey($defaultRoleId)->exists()) {
-            $user->assignRole($defaultRoleId);
+            if ($defaultRoleId && ! $user->roles()->whereKey($defaultRoleId)->exists()) {
+                $user->assignRole($defaultRoleId);
+            }
         }
 
         $this->invitationModel->delete();
 
-        $this->redirect(Dashboard::getUrl());
+        Filament::auth()->login($user);
+        session()->regenerate();
+
+        $this->redirect(AdminLandingUrl::forAuthenticatedUser($user));
     }
 
     /**

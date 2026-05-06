@@ -59,6 +59,10 @@ class UserPolicy
             return false;
         }
 
+        if ($record->isNonDeletableAccount()) {
+            return false;
+        }
+
         return $this->hasAccess($user, $record, 'creator');
     }
 
@@ -80,6 +84,10 @@ class UserPolicy
         }
 
         if ($user->id === $record->id) {
+            return false;
+        }
+
+        if ($record->isNonDeletableAccount()) {
             return false;
         }
 

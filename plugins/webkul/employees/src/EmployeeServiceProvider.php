@@ -19,6 +19,7 @@ class EmployeeServiceProvider extends PackageServiceProvider
     {
         $package->name(static::$name)
             ->hasTranslations()
+            ->hasViews()
             ->hasMigrations([
                 '2024_12_11_045350_create_employees_work_locations_table',
                 '2024_12_11_051916_create_employees_departments_table',
@@ -43,6 +44,8 @@ class EmployeeServiceProvider extends PackageServiceProvider
                 '2026_05_05_173000_add_signature_audit_fields_to_employees_employee_documents_table',
                 '2026_05_06_120000_add_signed_file_sha256_to_employees_employee_documents_table',
                 '2026_05_06_123000_add_onboarding_fields_to_employees_employees_table',
+                '2026_05_07_090000_create_employees_chat_messages_table',
+                '2026_05_08_090000_add_bank_account_holder_name_to_employees_employees_table',
             ])
             ->runsMigrations()
             ->hasSeeder('Webkul\\Employee\\Database\Seeders\\DatabaseSeeder')

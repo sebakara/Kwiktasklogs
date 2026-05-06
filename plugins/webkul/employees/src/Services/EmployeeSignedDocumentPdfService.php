@@ -67,6 +67,13 @@ final class EmployeeSignedDocumentPdfService
                 $orientation = $size['orientation'] ?? 'P';
                 $pdf->AddPage($orientation, [$size['width'], $size['height']]);
                 $pdf->useTemplate($templateId);
+
+                // Make signed pages visually distinguishable from the original.
+                $pdf->SetFont('dejavusans', 'B', 9);
+                $pdf->SetTextColor(180, 30, 30);
+                $pdf->SetXY(12, 8);
+                $pdf->Cell(0, 6, $this->lineForTcpdf('SIGNED ELECTRONICALLY'), 0, 1, 'L');
+                $pdf->SetTextColor(0, 0, 0);
             }
 
             $pdf->AddPage('P', 'A4');

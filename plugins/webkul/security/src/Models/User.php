@@ -13,15 +13,18 @@ use Filament\Auth\MultiFactor\Email\Concerns\InteractsWithEmailAuthentication;
 use Filament\Auth\MultiFactor\Email\Contracts\HasEmailAuthentication;
 use Filament\Models\Contracts\FilamentUser;
 use Filament\Panel;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Validation\ValidationException;
 use Spatie\Permission\Traits\HasRoles;
 use Webkul\Employee\Models\Department;
 use Webkul\Employee\Models\Employee;
+use Webkul\Employee\Models\EmployeeChatMessage;
 use Webkul\Partner\Models\Partner;
 use Webkul\Security\Enums\PermissionType;
 use Webkul\Security\Traits\HasPermissionScope;
@@ -90,6 +93,16 @@ class User extends BaseUser implements FilamentUser, HasAppAuthentication, HasAp
         return $this->hasOne(Employee::class, 'user_id');
     }
 
+    public function sentEmployeeChatMessages(): HasMany
+    {
+        return $this->hasMany(EmployeeChatMessage::class, 'sender_id');
+    }
+
+    public function receivedEmployeeChatMessages(): HasMany
+    {
+        return $this->hasMany(EmployeeChatMessage::class, 'recipient_id');
+    }
+
     public function departments(): HasMany
     {
         return $this->hasMany(Department::class, 'manager_id');
@@ -142,7 +155,107 @@ class User extends BaseUser implements FilamentUser, HasAppAuthentication, HasAp
             } else {
                 $user->handlePartnerUpdation($user);
             }
+
+            $user->pushSharedUserIdentityToEmployee();
         });
+
+        static::deleting(function (User $user): void {
+            if ($user->isNonDeletableAccount()) {
+                throw ValidationException::withMessages([
+                    'email' => __('security::models/user.cannot_delete_protected'),
+                ]);
+            }
+        });
+    }
+
+    /**
+     * @return list<string>
+     */
+    protected static function normalizedNonDeletableEmailsFromConfig(): array
+    {
+        $list = config('webkul_security.non_deletable_user_emails', ['admin@example.com']);
+
+        if (! is_array($list)) {
+            return ['admin@example.com'];
+        }
+
+        $normalized = array_values(array_unique(array_filter(array_map(
+            static fn (mixed $part): string => mb_strtolower(trim((string) $part)),
+            $list
+        ))));
+
+        return $normalized !== [] ? $normalized : ['admin@example.com'];
+    }
+
+    public static function isNonDeletableEmail(?string $email): bool
+    {
+        if ($email === null || trim($email) === '') {
+            return false;
+        }
+
+        $needle = mb_strtolower(trim($email));
+
+        foreach (self::normalizedNonDeletableEmailsFromConfig() as $blocked) {
+            if ($needle === mb_strtolower($blocked)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    public function isNonDeletableAccount(): bool
+    {
+        return self::isNonDeletableEmail(is_string($this->email) ? $this->email : null);
+    }
+
+    /**
+     * @return list<int>
+     */
+    public static function protectedAccountIds(): array
+    {
+        $emails = self::normalizedNonDeletableEmailsFromConfig();
+
+        return self::withTrashed()
+            ->where(function (Builder $query) use ($emails): void {
+                foreach ($emails as $email) {
+                    $query->orWhereRaw('LOWER(email) = ?', [mb_strtolower($email)]);
+                }
+            })
+            ->pluck('id')
+            ->map(static fn ($id): int => (int) $id)
+            ->all();
+    }
+
+    /**
+     * Mirror common identity fields onto the linked {@see Employee} so HR and auth profiles stay consistent.
+     */
+    public function pushSharedUserIdentityToEmployee(): void
+    {
+        $employee = $this->employee()->first();
+
+        if (! $employee instanceof Employee) {
+            return;
+        }
+
+        $userName = trim((string) ($this->name ?? ''));
+        if ($userName !== '') {
+            $employee->name = $userName;
+        }
+
+        $employee->is_active = (bool) $this->is_active;
+
+        $emailLower = strtolower(trim((string) $this->email));
+        if ($emailLower !== '' && filter_var($emailLower, FILTER_VALIDATE_EMAIL)) {
+            $work = strtolower(trim((string) ($employee->work_email ?? '')));
+            if ($work !== $emailLower) {
+                $employee->work_email = $emailLower;
+            }
+        }
+
+        if ($employee->isDirty()) {
+            $employee->save();
+        }
     }
 
     private function handlePartnerCreation(self $user): void
