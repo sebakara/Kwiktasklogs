@@ -31,17 +31,17 @@ it('aggregates timesheet hours for linked user in period', function () {
     $task->users()->sync([$user->id]);
 
     Timesheet::query()->create([
-        'type' => 'projects',
-        'name' => 'Work',
-        'date' => '2026-01-15',
-        'amount' => 0,
+        'type'        => 'projects',
+        'name'        => 'Work',
+        'date'        => '2026-01-15',
+        'amount'      => 0,
         'unit_amount' => 3,
-        'user_id' => $user->id,
-        'partner_id' => null,
-        'company_id' => $task->company_id,
-        'creator_id' => $user->id,
-        'project_id' => $task->project_id,
-        'task_id' => $task->id,
+        'user_id'     => $user->id,
+        'partner_id'  => null,
+        'company_id'  => $task->company_id,
+        'creator_id'  => $user->id,
+        'project_id'  => $task->project_id,
+        'task_id'     => $task->id,
     ]);
 
     $metrics = app(EmployeeReviewMetricsService::class)->compute(
@@ -61,30 +61,30 @@ it('prevents duplicate reviews for same employee and period', function () {
     $reviewer = User::factory()->create();
 
     EmployeeReview::query()->create([
-        'employee_id' => $employee->id,
-        'reviewer_id' => $reviewer->id,
-        'period_type' => EmployeeReviewPeriodType::Monthly,
-        'period_start' => '2026-03-01',
-        'period_end' => '2026-03-31',
-        'period_label' => '2026-03',
+        'employee_id'      => $employee->id,
+        'reviewer_id'      => $reviewer->id,
+        'period_type'      => EmployeeReviewPeriodType::Monthly,
+        'period_start'     => '2026-03-01',
+        'period_end'       => '2026-03-31',
+        'period_label'     => '2026-03',
         'metrics_snapshot' => [],
-        'manager_rating' => null,
+        'manager_rating'   => null,
         'manager_comments' => null,
-        'status' => EmployeeReviewStatus::Draft,
-        'company_id' => $employee->company_id,
+        'status'           => EmployeeReviewStatus::Draft,
+        'company_id'       => $employee->company_id,
     ]);
 
     expect(fn () => EmployeeReview::query()->create([
-        'employee_id' => $employee->id,
-        'reviewer_id' => $reviewer->id,
-        'period_type' => EmployeeReviewPeriodType::Monthly,
-        'period_start' => '2026-03-01',
-        'period_end' => '2026-03-31',
-        'period_label' => '2026-03',
+        'employee_id'      => $employee->id,
+        'reviewer_id'      => $reviewer->id,
+        'period_type'      => EmployeeReviewPeriodType::Monthly,
+        'period_start'     => '2026-03-01',
+        'period_end'       => '2026-03-31',
+        'period_label'     => '2026-03',
         'metrics_snapshot' => [],
-        'manager_rating' => null,
+        'manager_rating'   => null,
         'manager_comments' => null,
-        'status' => EmployeeReviewStatus::Draft,
-        'company_id' => $employee->company_id,
+        'status'           => EmployeeReviewStatus::Draft,
+        'company_id'       => $employee->company_id,
     ]))->toThrow(QueryException::class);
 });

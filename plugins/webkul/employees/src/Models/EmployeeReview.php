@@ -40,12 +40,12 @@ class EmployeeReview extends Model
     protected function casts(): array
     {
         return [
-            'period_start' => 'date',
-            'period_end' => 'date',
-            'period_type' => EmployeeReviewPeriodType::class,
-            'status' => EmployeeReviewStatus::class,
+            'period_start'     => 'date',
+            'period_end'       => 'date',
+            'period_type'      => EmployeeReviewPeriodType::class,
+            'status'           => EmployeeReviewStatus::class,
             'metrics_snapshot' => 'array',
-            'manager_rating' => 'decimal:2',
+            'manager_rating'   => 'decimal:2',
         ];
     }
 

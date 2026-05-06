@@ -2,16 +2,18 @@
 
 namespace Webkul\Employee\Enums;
 
-enum EmployeeReviewStatus: string
+enum EmployeeDocumentStatus: string
 {
     case Draft = 'draft';
-    case Finalized = 'finalized';
+    case PendingSignature = 'pending_signature';
+    case Signed = 'signed';
 
     public function getLabel(): string
     {
         return match ($this) {
-            self::Draft     => __('employees::enums/employee-review-status.draft'),
-            self::Finalized => __('employees::enums/employee-review-status.finalized'),
+            self::Draft            => __('employees::enums/employee-document-status.draft'),
+            self::PendingSignature => __('employees::enums/employee-document-status.pending-signature'),
+            self::Signed           => __('employees::enums/employee-document-status.signed'),
         };
     }
 

@@ -1,6 +1,6 @@
 <?php
 
 return [
-    'draft' => 'Draft',
+    'draft'     => 'Draft',
     'finalized' => 'Finalized',
 ];

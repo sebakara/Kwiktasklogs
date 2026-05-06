@@ -3,7 +3,6 @@
 namespace Webkul\Employee\Filament\Clusters\Reportings\Resources;
 
 use Filament\Actions\ActionGroup;
-use Illuminate\Database\Eloquent\Builder;
 use Filament\Actions\ViewAction;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Panel;
@@ -18,6 +17,7 @@ use Filament\Tables\Filters\QueryBuilder\Constraints\RelationshipConstraint\Oper
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Grouping\Group;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 use Webkul\Employee\Enums\EmployeeReviewPeriodType;
 use Webkul\Employee\Enums\EmployeeReviewStatus;
 use Webkul\Employee\Filament\Clusters\Reportings;
@@ -243,7 +243,7 @@ class EmployeeReviewResource extends Resource
     {
         return [
             'index' => ListEmployeeReviews::route('/'),
-            'view' => ViewEmployeeReview::route('/{record}'),
+            'view'  => ViewEmployeeReview::route('/{record}'),
         ];
     }
 }
