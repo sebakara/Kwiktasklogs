@@ -136,7 +136,12 @@ return [
             'mimetypes:image/*,video/*,audio/*,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation,text/plain,text/csv,application/zip',
         ],
         'directory'     => null,
-        'middleware'    => 'auth',
+        /*
+         * Use the `web` stack (session + CSRF), not `auth`. Guest-facing flows — e.g. signed
+         * invitation acceptance with FileUpload — must upload to Livewire’s temp endpoint without
+         * being logged in; `auth` makes every temp upload fail for those users.
+         */
+        'middleware'    => ['web'],
         'preview_mimes' => [
             'png',
             'gif',

@@ -16,11 +16,8 @@ class EmployeePolicy
      */
     public function viewAny(User $user): bool
     {
-        if ($this->isEmployeeRole($user)) {
-            return $user->can('view_employee_employee');
-        }
-
-        return $user->can('view_any_employee_employee') || $user->can('view_employee_employee');
+        return $user->can('view_any_employee_employee')
+            || $user->can('view_employee_employee');
     }
 
     /**
@@ -28,16 +25,28 @@ class EmployeePolicy
      */
     public function view(User $user, Employee $employee): bool
     {
-        if ($this->isEmployeeRole($user)) {
-            $userEmail = mb_strtolower(trim((string) $user->email));
-            $workEmail = mb_strtolower(trim((string) ($employee->work_email ?? '')));
-            $privateEmail = mb_strtolower(trim((string) ($employee->private_email ?? '')));
-
-            return (int) ($employee->user_id ?? 0) === (int) $user->id
-                || ($userEmail !== '' && ($workEmail === $userEmail || $privateEmail === $userEmail));
+        if (! $user->can('view_employee_employee')) {
+            return false;
         }
 
-        return $user->can('view_employee_employee');
+        if ($user->can('view_any_employee_employee')) {
+            return $this->hasAccess($user, $employee, 'coach');
+        }
+
+        return $this->ownsEmployeeProfile($user, $employee);
+    }
+
+    /**
+     * True when this employee HR row belongs to the signed-in user's profile (portal / self-service).
+     */
+    private function ownsEmployeeProfile(User $user, Employee $employee): bool
+    {
+        $userEmail = mb_strtolower(trim((string) $user->email));
+        $workEmail = mb_strtolower(trim((string) ($employee->work_email ?? '')));
+        $privateEmail = mb_strtolower(trim((string) ($employee->private_email ?? '')));
+
+        return (int) ($employee->user_id ?? 0) === (int) $user->id
+            || ($userEmail !== '' && ($workEmail === $userEmail || $privateEmail === $userEmail));
     }
 
     /**
@@ -110,10 +119,5 @@ class EmployeePolicy
         }
 
         return $this->hasAccess($user, $employee, 'coach');
-    }
-
-    private function isEmployeeRole(User $user): bool
-    {
-        return $user->hasRole('employee');
     }
 }

@@ -467,6 +467,8 @@ class EmployeeResource extends Resource
                                                                     ->label(__('employees::filament/resources/employee.form.tabs.private-information.fields.bank-account')),
                                                                 TextInput::make('bank_name')
                                                                     ->label('Bank name'),
+                                                                TextInput::make('bank_account_holder_name')
+                                                                    ->label('Account name'),
                                                                 TextInput::make('bank_account_number')
                                                                     ->label('Account number'),
                                                                 TextInput::make('private_email')
@@ -1855,15 +1857,24 @@ class EmployeeResource extends Resource
         $query = parent::getEloquentQuery();
         $user = Auth::user();
 
-        if ($user && $user->hasRole('employee')) {
+        /*
+         * Self-service accounts: Shield often grants singular `view_employee_employee` without
+         * `view_any_employee_employee`. Never rely only on {@see User::hasRole('employee')} — role
+         * naming/casing differs and would skip this scope, leaking the full employee list + records.
+         */
+        if (
+            $user instanceof User
+            && $user->can('view_employee_employee')
+            && ! $user->can('view_any_employee_employee')
+        ) {
             $normalizedEmail = mb_strtolower(trim((string) $user->email));
 
             $query->where(function (Builder $query) use ($user, $normalizedEmail): void {
                 $query->where('user_id', $user->id);
 
                 if ($normalizedEmail !== '') {
-                    $query->orWhereRaw('LOWER(work_email) = ?', [$normalizedEmail])
-                        ->orWhereRaw('LOWER(private_email) = ?', [$normalizedEmail]);
+                    $query->orWhereRaw('LOWER(TRIM(work_email)) = ?', [$normalizedEmail])
+                        ->orWhereRaw('LOWER(TRIM(private_email)) = ?', [$normalizedEmail]);
                 }
             });
         }

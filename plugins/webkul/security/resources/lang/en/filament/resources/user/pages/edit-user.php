@@ -27,7 +27,7 @@ return [
                 'body'  => 'The user has been deleted successfully.',
                 'error' => [
                     'title' => 'User Cannot Be Deleted',
-                    'body'  => 'This is a default user or you cannot delete yourself.',
+                    'body'  => 'This is a default user, a protected system account, or you cannot delete yourself.',
                 ],
             ],
         ],
