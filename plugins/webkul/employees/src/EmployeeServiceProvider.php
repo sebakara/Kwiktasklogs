@@ -41,6 +41,8 @@ class EmployeeServiceProvider extends PackageServiceProvider
                 '2026_05_01_120000_create_employees_reviews_table',
                 '2026_05_05_100000_create_employees_employee_documents_table',
                 '2026_05_05_173000_add_signature_audit_fields_to_employees_employee_documents_table',
+                '2026_05_06_120000_add_signed_file_sha256_to_employees_employee_documents_table',
+                '2026_05_06_123000_add_onboarding_fields_to_employees_employees_table',
             ])
             ->runsMigrations()
             ->hasSeeder('Webkul\\Employee\\Database\Seeders\\DatabaseSeeder')

@@ -10,6 +10,7 @@ use Filament\Actions\EditAction;
 use Filament\Actions\ForceDeleteBulkAction;
 use Filament\Actions\RestoreAction;
 use Filament\Actions\ViewAction;
+use Filament\Forms\Components\Checkbox;
 use Filament\Forms\Components\ColorPicker;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\FileUpload;
@@ -57,6 +58,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\QueryException;
+use Illuminate\Support\Facades\Auth;
 use Webkul\Employee\Enums\DistanceUnit;
 use Webkul\Employee\Enums\Gender;
 use Webkul\Employee\Enums\MaritalStatus;
@@ -142,6 +144,8 @@ class EmployeeResource extends Resource
                                         TextInput::make('name')
                                             ->label(__('employees::filament/resources/employee.form.sections.fields.name'))
                                             ->required()
+                                            ->readOnly(fn (?Employee $record): bool => $record !== null
+                                                && (int) ($record->user_id ?? 0) === (int) Auth::id())
                                             ->maxLength(255)
                                             ->extraInputAttributes(['style' => 'font-size: 1.5rem;height: 3rem;'])
                                             ->columnSpan(1),
@@ -169,6 +173,8 @@ class EmployeeResource extends Resource
                                 TextInput::make('work_email')
                                     ->label(__('employees::filament/resources/employee.form.sections.fields.work-email'))
                                     ->required()
+                                    ->readOnly(fn (?Employee $record): bool => $record !== null
+                                        && (int) ($record->user_id ?? 0) === (int) Auth::id())
                                     ->unique(ignoreRecord: true)
                                     ->suffixAction(
                                         Action::make('open_mailbox')
@@ -459,6 +465,10 @@ class EmployeeResource extends Resource
                                                                     )
                                                                     ->disabled(fn ($livewire) => ! $livewire->record?->user)
                                                                     ->label(__('employees::filament/resources/employee.form.tabs.private-information.fields.bank-account')),
+                                                                TextInput::make('bank_name')
+                                                                    ->label('Bank name'),
+                                                                TextInput::make('bank_account_number')
+                                                                    ->label('Account number'),
                                                                 TextInput::make('private_email')
                                                                     ->label(__('employees::filament/resources/employee.form.tabs.private-information.fields.private-email'))
                                                                     ->suffixAction(
@@ -511,6 +521,8 @@ class EmployeeResource extends Resource
                                                                                     ->url(fn (?string $state) => $state ? "tel:{$state}" : '#')
                                                                             )
                                                                             ->tel(),
+                                                                        TextInput::make('emergency_contact_relation')
+                                                                            ->label('Relationship'),
                                                                     ])->columns(2),
                                                             ])
                                                             ->columnSpan(['lg' => 1]),
@@ -624,12 +636,25 @@ class EmployeeResource extends Resource
                                                             ->required(fn (Get $get) => Country::find($get('country_id'))?->state_required),
                                                         TextInput::make('identification_id')
                                                             ->label(__('employees::filament/resources/employee.form.tabs.private-information.fields.identification-id')),
+                                                        FileUpload::make('national_id_file_path')
+                                                            ->label('NID upload')
+                                                            ->acceptedFileTypes([
+                                                                'image/*',
+                                                                'application/pdf',
+                                                            ])
+                                                            ->directory('employees/nid')
+                                                            ->visibility('public'),
                                                         TextInput::make('ssnid')
                                                             ->label(__('employees::filament/resources/employee.form.tabs.private-information.fields.ssnid')),
                                                         TextInput::make('sinid')
                                                             ->label(__('employees::filament/resources/employee.form.tabs.private-information.fields.sinid')),
                                                         TextInput::make('passport_id')
                                                             ->label(__('employees::filament/resources/employee.form.tabs.private-information.fields.passport-id')),
+                                                        FileUpload::make('passport_image_path')
+                                                            ->label('Passport image upload')
+                                                            ->image()
+                                                            ->directory('employees/passport')
+                                                            ->visibility('public'),
                                                         Select::make('gender')
                                                             ->label(__('employees::filament/resources/employee.form.tabs.private-information.fields.gender'))
                                                             ->searchable()
@@ -671,6 +696,15 @@ class EmployeeResource extends Resource
                                                             ])
                                                             ->directory('employees/work-permit')
                                                             ->visibility('public'),
+                                                        Checkbox::make('agreed_to_terms')
+                                                            ->label('I agree to the terms and conditions')
+                                                            ->visible(fn (?Employee $record): bool => $record !== null
+                                                                && (int) ($record->user_id ?? 0) === (int) Auth::id())
+                                                            ->dehydrated(fn (?Employee $record): bool => $record !== null
+                                                                && (int) ($record->user_id ?? 0) === (int) Auth::id())
+                                                            ->accepted()
+                                                            ->required(fn (?Employee $record): bool => $record !== null
+                                                                && (int) ($record->user_id ?? 0) === (int) Auth::id()),
                                                     ])->columns(1),
                                             ])
                                             ->columnSpan(['lg' => 1]),
@@ -1814,6 +1848,27 @@ class EmployeeResource extends Resource
     public static function getSlug(?Panel $panel = null): string
     {
         return 'employees/employees';
+    }
+
+    public static function getEloquentQuery(): Builder
+    {
+        $query = parent::getEloquentQuery();
+        $user = Auth::user();
+
+        if ($user && $user->hasRole('employee')) {
+            $normalizedEmail = mb_strtolower(trim((string) $user->email));
+
+            $query->where(function (Builder $query) use ($user, $normalizedEmail): void {
+                $query->where('user_id', $user->id);
+
+                if ($normalizedEmail !== '') {
+                    $query->orWhereRaw('LOWER(work_email) = ?', [$normalizedEmail])
+                        ->orWhereRaw('LOWER(private_email) = ?', [$normalizedEmail]);
+                }
+            });
+        }
+
+        return $query;
     }
 
     public static function getPages(): array

@@ -21,6 +21,7 @@ class EmployeeDocument extends Model
         'signed_ip_address',
         'signed_user_agent',
         'signature_hash',
+        'signed_file_sha256',
         'title',
         'document_type',
         'status',
