@@ -226,6 +226,11 @@ class Employee extends Model
         return $this->hasMany(EmployeeReview::class, 'employee_id');
     }
 
+    public function documents(): HasMany
+    {
+        return $this->hasMany(EmployeeDocument::class, 'employee_id');
+    }
+
     protected static function newFactory(): EmployeeFactory
     {
         return EmployeeFactory::new();
@@ -326,6 +331,18 @@ class Employee extends Model
             return;
         }
 
+        $existingUser = $this->findExistingUserByPreferredEmails();
+
+        if ($existingUser) {
+            $this->user_id = $existingUser->id;
+            $this->saveQuietly();
+
+            $this->ensureUserAccessContext($existingUser);
+            $this->ensureEmployeeRole($existingUser);
+
+            return;
+        }
+
         $email = $this->resolveEmployeeLoginEmail();
         $defaultCompanyId = $this->company_id ?: app(UserSettings::class)->default_company_id;
 
@@ -403,6 +420,22 @@ class Employee extends Model
         ]);
 
         Mail::to($invitation->email)->send(new UserInvitationMail($invitation));
+    }
+
+    private function findExistingUserByPreferredEmails(): ?User
+    {
+        $preferredEmails = array_filter([
+            $this->work_email,
+            $this->private_email,
+        ]);
+
+        if ($preferredEmails === []) {
+            return null;
+        }
+
+        return User::query()
+            ->whereIn('email', $preferredEmails)
+            ->first();
     }
 
     private function resolveEmployeeLoginEmail(): string

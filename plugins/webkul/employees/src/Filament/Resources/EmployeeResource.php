@@ -67,10 +67,12 @@ use Webkul\Employee\Filament\Clusters\Configurations\Resources\WorkLocationResou
 use Webkul\Employee\Filament\Resources\EmployeeResource\Pages\CreateEmployee;
 use Webkul\Employee\Filament\Resources\EmployeeResource\Pages\EditEmployee;
 use Webkul\Employee\Filament\Resources\EmployeeResource\Pages\ListEmployees;
+use Webkul\Employee\Filament\Resources\EmployeeResource\Pages\ManageDocuments;
 use Webkul\Employee\Filament\Resources\EmployeeResource\Pages\ManageResume;
 use Webkul\Employee\Filament\Resources\EmployeeResource\Pages\ManageReviews;
 use Webkul\Employee\Filament\Resources\EmployeeResource\Pages\ManageSkill;
 use Webkul\Employee\Filament\Resources\EmployeeResource\Pages\ViewEmployee;
+use Webkul\Employee\Filament\Resources\EmployeeResource\RelationManagers\DocumentsRelationManager;
 use Webkul\Employee\Filament\Resources\EmployeeResource\RelationManagers\ResumeRelationManager;
 use Webkul\Employee\Filament\Resources\EmployeeResource\RelationManagers\SkillsRelationManager;
 use Webkul\Employee\Models\Employee;
@@ -1783,6 +1785,7 @@ class EmployeeResource extends Resource
             ViewEmployee::class,
             EditEmployee::class,
             ManageSkill::class,
+            ManageDocuments::class,
             ManageResume::class,
             ManageReviews::class,
         ]);
@@ -1799,6 +1802,10 @@ class EmployeeResource extends Resource
                 ResumeRelationManager::class,
             ])
                 ->icon('heroicon-o-clipboard-document-list'),
+            RelationGroup::make('Manage Documents', [
+                DocumentsRelationManager::class,
+            ])
+                ->icon('heroicon-o-document-check'),
         ];
 
         return $relations;
@@ -1812,13 +1819,14 @@ class EmployeeResource extends Resource
     public static function getPages(): array
     {
         return [
-            'index'   => ListEmployees::route('/'),
-            'create'  => CreateEmployee::route('/create'),
-            'edit'    => EditEmployee::route('/{record}/edit'),
-            'view'    => ViewEmployee::route('/{record}'),
-            'skills'  => ManageSkill::route('/{record}/skills'),
-            'resumes' => ManageResume::route('/{record}/resumes'),
-            'reviews' => ManageReviews::route('/{record}/reviews'),
+            'index'     => ListEmployees::route('/'),
+            'create'    => CreateEmployee::route('/create'),
+            'edit'      => EditEmployee::route('/{record}/edit'),
+            'view'      => ViewEmployee::route('/{record}'),
+            'skills'    => ManageSkill::route('/{record}/skills'),
+            'documents' => ManageDocuments::route('/{record}/documents'),
+            'resumes'   => ManageResume::route('/{record}/resumes'),
+            'reviews'   => ManageReviews::route('/{record}/reviews'),
         ];
     }
 }

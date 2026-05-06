@@ -20,16 +20,16 @@ class EmployeeReviewMetricsService
 
         if (! $userId) {
             return [
-                'has_linked_user' => false,
-                'message' => __('employees::services/employee-review-metrics.no-linked-user'),
-                'total_hours_logged' => 0.0,
-                'timesheet_entries_count' => 0,
-                'distinct_projects_count' => 0,
+                'has_linked_user'                => false,
+                'message'                        => __('employees::services/employee-review-metrics.no-linked-user'),
+                'total_hours_logged'             => 0.0,
+                'timesheet_entries_count'        => 0,
+                'distinct_projects_count'        => 0,
                 'distinct_tasks_with_time_count' => 0,
-                'tasks_assigned_count' => 0,
-                'tasks_completed_count' => 0,
-                'average_task_progress' => 0.0,
-                'total_task_overtime_hours' => 0.0,
+                'tasks_assigned_count'           => 0,
+                'tasks_completed_count'          => 0,
+                'average_task_progress'          => 0.0,
+                'total_task_overtime_hours'      => 0.0,
             ];
         }
 
@@ -81,16 +81,16 @@ class EmployeeReviewMetricsService
         $totalOvertime = (float) $scopedTasks->sum('overtime');
 
         return [
-            'has_linked_user' => true,
-            'total_hours_logged' => round($totalHours, 4),
-            'timesheet_entries_count' => $entriesCount,
-            'distinct_projects_count' => count($projectIdsFromTimesheets),
+            'has_linked_user'                => true,
+            'total_hours_logged'             => round($totalHours, 4),
+            'timesheet_entries_count'        => $entriesCount,
+            'distinct_projects_count'        => count($projectIdsFromTimesheets),
             'distinct_tasks_with_time_count' => count($taskIdsFromTimesheets),
-            'tasks_assigned_count' => $tasksAssignedCount,
-            'tasks_completed_count' => $tasksCompletedCount,
-            'average_task_progress' => $averageProgress,
-            'total_task_overtime_hours' => round($totalOvertime, 4),
-            'task_ids_from_timesheets' => array_map('intval', $taskIdsFromTimesheets),
+            'tasks_assigned_count'           => $tasksAssignedCount,
+            'tasks_completed_count'          => $tasksCompletedCount,
+            'average_task_progress'          => $averageProgress,
+            'total_task_overtime_hours'      => round($totalOvertime, 4),
+            'task_ids_from_timesheets'       => array_map('intval', $taskIdsFromTimesheets),
         ];
     }
 }

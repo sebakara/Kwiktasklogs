@@ -13,11 +13,11 @@ enum EmployeeReviewPeriodType: string
     public function getLabel(): string
     {
         return match ($this) {
-            self::Monthly => __('employees::enums/employee-review-period-type.monthly'),
+            self::Monthly   => __('employees::enums/employee-review-period-type.monthly'),
             self::Quarterly => __('employees::enums/employee-review-period-type.quarterly'),
-            self::MidYear => __('employees::enums/employee-review-period-type.mid-year'),
-            self::Yearly => __('employees::enums/employee-review-period-type.yearly'),
-            self::Custom => __('employees::enums/employee-review-period-type.custom'),
+            self::MidYear   => __('employees::enums/employee-review-period-type.mid-year'),
+            self::Yearly    => __('employees::enums/employee-review-period-type.yearly'),
+            self::Custom    => __('employees::enums/employee-review-period-type.custom'),
         };
     }
 

@@ -23,7 +23,6 @@ use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\ValidationException;
 use Webkul\Employee\Enums\EmployeeReviewPeriodType;
@@ -128,7 +127,7 @@ trait EmployeeReviewRelation
                     ->label(__('employees::filament/resources/employee/pages/manage-review.table.header-actions.create'))
                     ->icon(Heroicon::OutlinedPlusCircle)
                     ->createAnother(false)
-                    ->using(function (array $data, HasActions & HasSchemas $livewire): EmployeeReview {
+                    ->using(function (array $data, HasActions&HasSchemas $livewire): EmployeeReview {
                         $employee = $livewire->getOwnerRecord();
 
                         $periodType = EmployeeReviewPeriodType::from($data['period_type']);
@@ -179,17 +178,17 @@ trait EmployeeReviewRelation
                         );
 
                         $review = new EmployeeReview([
-                            'employee_id' => $employee->getKey(),
-                            'reviewer_id' => Auth::id(),
-                            'period_type' => $periodType,
-                            'period_start' => $period['start']->toDateString(),
-                            'period_end' => $period['end']->toDateString(),
-                            'period_label' => $period['label'],
+                            'employee_id'      => $employee->getKey(),
+                            'reviewer_id'      => Auth::id(),
+                            'period_type'      => $periodType,
+                            'period_start'     => $period['start']->toDateString(),
+                            'period_end'       => $period['end']->toDateString(),
+                            'period_label'     => $period['label'],
                             'metrics_snapshot' => $metrics,
-                            'manager_rating' => $data['manager_rating'] ?? null,
+                            'manager_rating'   => $data['manager_rating'] ?? null,
                             'manager_comments' => $data['manager_comments'] ?? null,
-                            'status' => EmployeeReviewStatus::Draft,
-                            'company_id' => $employee->company_id,
+                            'status'           => EmployeeReviewStatus::Draft,
+                            'company_id'       => $employee->company_id,
                         ]);
 
                         $employee->reviews()->save($review);

@@ -16,11 +16,11 @@ class EmployeeReviewPeriodResolver
         $reference = $referenceDate->copy()->startOfDay();
 
         return match ($type) {
-            EmployeeReviewPeriodType::Monthly => $this->monthly($reference),
+            EmployeeReviewPeriodType::Monthly   => $this->monthly($reference),
             EmployeeReviewPeriodType::Quarterly => $this->quarterly($reference),
-            EmployeeReviewPeriodType::MidYear => $this->midYear($reference),
-            EmployeeReviewPeriodType::Yearly => $this->yearly($reference),
-            EmployeeReviewPeriodType::Custom => throw new InvalidArgumentException('Use resolveCustom for custom period type.'),
+            EmployeeReviewPeriodType::MidYear   => $this->midYear($reference),
+            EmployeeReviewPeriodType::Yearly    => $this->yearly($reference),
+            EmployeeReviewPeriodType::Custom    => throw new InvalidArgumentException('Use resolveCustom for custom period type.'),
         };
     }
 
@@ -38,7 +38,7 @@ class EmployeeReviewPeriodResolver
 
         return [
             'start' => $from,
-            'end' => $to,
+            'end'   => $to,
             'label' => $from->toDateString().' — '.$to->toDateString(),
         ];
     }
@@ -53,7 +53,7 @@ class EmployeeReviewPeriodResolver
 
         return [
             'start' => $start,
-            'end' => $end,
+            'end'   => $end,
             'label' => $start->format('Y-m'),
         ];
     }
@@ -71,7 +71,7 @@ class EmployeeReviewPeriodResolver
 
         return [
             'start' => $start,
-            'end' => $end,
+            'end'   => $end,
             'label' => $start->format('Y').'-Q'.$quarter,
         ];
     }
@@ -95,7 +95,7 @@ class EmployeeReviewPeriodResolver
 
         return [
             'start' => $start,
-            'end' => $end,
+            'end'   => $end,
             'label' => $label,
         ];
     }
@@ -110,7 +110,7 @@ class EmployeeReviewPeriodResolver
 
         return [
             'start' => $start,
-            'end' => $end,
+            'end'   => $end,
             'label' => (string) $start->year,
         ];
     }

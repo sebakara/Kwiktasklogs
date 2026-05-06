@@ -26,17 +26,17 @@ class EmployeeReviewFactory extends Factory
         $end = $start->copy()->endOfMonth();
 
         return [
-            'employee_id' => Employee::factory(),
-            'reviewer_id' => User::factory(),
-            'period_type' => EmployeeReviewPeriodType::Monthly,
-            'period_start' => $start->toDateString(),
-            'period_end' => $end->toDateString(),
-            'period_label' => $start->format('Y-m'),
+            'employee_id'      => Employee::factory(),
+            'reviewer_id'      => User::factory(),
+            'period_type'      => EmployeeReviewPeriodType::Monthly,
+            'period_start'     => $start->toDateString(),
+            'period_end'       => $end->toDateString(),
+            'period_label'     => $start->format('Y-m'),
             'metrics_snapshot' => [],
-            'manager_rating' => fake()->randomFloat(2, 1, 5),
+            'manager_rating'   => fake()->randomFloat(2, 1, 5),
             'manager_comments' => fake()->sentence(),
-            'status' => EmployeeReviewStatus::Draft,
-            'company_id' => null,
+            'status'           => EmployeeReviewStatus::Draft,
+            'company_id'       => null,
         ];
     }
 }
