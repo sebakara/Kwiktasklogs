@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
+use InvalidArgumentException;
 use Webkul\Chatter\Traits\HasChatter;
 use Webkul\Chatter\Traits\HasLogActivity;
 use Webkul\Employee\Database\Factories\EmployeeFactory;
@@ -47,6 +48,8 @@ class Employee extends Model
         'state_id',
         'country_of_birth',
         'bank_account_id',
+        'bank_name',
+        'bank_account_number',
         'departure_reason_id',
         'name',
         'job_title',
@@ -77,7 +80,9 @@ class Employee extends Model
         'ssnid',
         'sinid',
         'identification_id',
+        'national_id_file_path',
         'passport_id',
+        'passport_image_path',
         'permit_no',
         'visa_no',
         'certificate',
@@ -85,6 +90,9 @@ class Employee extends Model
         'study_school',
         'emergency_contact',
         'emergency_phone',
+        'emergency_contact_relation',
+        'agreed_to_terms',
+        'agreed_to_terms_at',
         'employee_type',
         'barcode',
         'pin',
@@ -109,6 +117,8 @@ class Employee extends Model
         'is_flexible'                    => 'boolean',
         'is_fully_flexible'              => 'boolean',
         'work_permit_scheduled_activity' => 'boolean',
+        'agreed_to_terms'                => 'boolean',
+        'agreed_to_terms_at'             => 'datetime',
     ];
 
     public function getModelTitle(): string
@@ -255,6 +265,25 @@ class Employee extends Model
     {
         parent::boot();
 
+        static::saving(function (self $employee): void {
+            if ($employee->agreed_to_terms && ! $employee->agreed_to_terms_at) {
+                $employee->agreed_to_terms_at = now();
+            }
+
+            if (! $employee->user_id) {
+                return;
+            }
+
+            $linkedEmployeeExists = self::query()
+                ->where('user_id', $employee->user_id)
+                ->when($employee->exists, fn ($query) => $query->whereKeyNot($employee->id))
+                ->exists();
+
+            if ($linkedEmployeeExists) {
+                throw new InvalidArgumentException('This user is already linked to another employee record.');
+            }
+        });
+
         static::saved(function (self $employee) {
             $employee->synchronizeHrRecords();
         });
@@ -334,6 +363,15 @@ class Employee extends Model
         $existingUser = $this->findExistingUserByPreferredEmails();
 
         if ($existingUser) {
+            $alreadyLinkedEmployeeExists = self::query()
+                ->where('user_id', $existingUser->id)
+                ->whereKeyNot($this->id)
+                ->exists();
+
+            if ($alreadyLinkedEmployeeExists) {
+                throw new InvalidArgumentException('The selected email belongs to a user already linked to another employee.');
+            }
+
             $this->user_id = $existingUser->id;
             $this->saveQuietly();
 
@@ -372,8 +410,6 @@ class Employee extends Model
 
         if ($defaultRoleId && ! $user->roles()->whereKey($defaultRoleId)->exists()) {
             $user->assignRole($defaultRoleId);
-
-            return;
         }
 
         $employeeRole = Role::query()

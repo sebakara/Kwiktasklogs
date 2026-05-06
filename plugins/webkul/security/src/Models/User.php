@@ -2,6 +2,8 @@
 
 namespace Webkul\Security\Models;
 
+use App\Models\Document;
+use App\Models\DocumentUser;
 use App\Models\User as BaseUser;
 use Filament\Auth\MultiFactor\App\Concerns\InteractsWithAppAuthentication;
 use Filament\Auth\MultiFactor\App\Concerns\InteractsWithAppAuthenticationRecovery;
@@ -111,6 +113,19 @@ class User extends BaseUser implements FilamentUser, HasAppAuthentication, HasAp
     public function defaultCompany(): BelongsTo
     {
         return $this->belongsTo(Company::class, 'default_company_id');
+    }
+
+    public function uploadedDocuments(): HasMany
+    {
+        return $this->hasMany(Document::class, 'uploaded_by_user_id');
+    }
+
+    public function assignedDocuments(): BelongsToMany
+    {
+        return $this->belongsToMany(Document::class, 'document_user')
+            ->using(DocumentUser::class)
+            ->withPivot(['id', 'status', 'viewed_at', 'signed_at'])
+            ->withTimestamps();
     }
 
     protected static function boot()

@@ -4,12 +4,16 @@ namespace Webkul\Security\Livewire;
 
 use Filament\Actions\Action;
 use Filament\Actions\ActionGroup;
+use Filament\Forms\Components\Checkbox;
+use Filament\Forms\Components\FileUpload;
+use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Pages\Concerns\InteractsWithFormActions;
 use Filament\Pages\SimplePage;
 use Filament\Schemas\Schema;
 use Illuminate\Validation\Rules\Password;
+use Webkul\Employee\Models\Employee;
 use Webkul\Project\Filament\Pages\Dashboard;
 use Webkul\Security\Models\Invitation;
 use Webkul\Security\Models\User;
@@ -31,9 +35,24 @@ class AcceptInvitation extends SimplePage
     public function mount(): void
     {
         $this->invitationModel = Invitation::findOrFail($this->invitation);
+        $employee = Employee::query()
+            ->where('work_email', $this->invitationModel->email)
+            ->orWhere('private_email', $this->invitationModel->email)
+            ->first();
+        $existingUser = User::withTrashed()->where('email', $this->invitationModel->email)->first();
+        $fullName = $employee?->name ?: $existingUser?->name ?: $this->invitationModel->email;
 
         $this->form->fill([
-            'email' => $this->invitationModel->email,
+            'name'                       => $fullName,
+            'email'                      => $this->invitationModel->email,
+            'phone_number'               => $employee?->mobile_phone,
+            'address'                    => $employee?->private_street1,
+            'nid'                        => $employee?->identification_id,
+            'bank_name'                  => $employee?->bank_name,
+            'bank_account_number'        => $employee?->bank_account_number,
+            'emergency_contact_name'     => $employee?->emergency_contact,
+            'emergency_contact_phone'    => $employee?->emergency_phone,
+            'emergency_contact_relation' => $employee?->emergency_contact_relation,
         ]);
     }
 
@@ -44,8 +63,13 @@ class AcceptInvitation extends SimplePage
                 TextInput::make('name')
                     ->label(__('security::livewire/accept-invitation.form.name.label'))
                     ->required()
+                    ->readOnly()
                     ->maxLength(255)
                     ->autofocus(),
+                TextInput::make('nid')
+                    ->label('NID (National ID)')
+                    ->required()
+                    ->maxLength(255),
                 TextInput::make('email')
                     ->label(__('security::livewire/accept-invitation.form.email.label'))
                     ->disabled(),
@@ -61,6 +85,50 @@ class AcceptInvitation extends SimplePage
                     ->password()
                     ->required()
                     ->dehydrated(false),
+                TextInput::make('phone_number')
+                    ->label('Phone number')
+                    ->required()
+                    ->tel(),
+                Textarea::make('address')
+                    ->label('Address')
+                    ->required()
+                    ->rows(3),
+                TextInput::make('bank_name')
+                    ->label('Bank name')
+                    ->required()
+                    ->maxLength(255),
+                TextInput::make('bank_account_number')
+                    ->label('Account number')
+                    ->required()
+                    ->maxLength(255),
+                FileUpload::make('passport_image_path')
+                    ->label('Passport image upload')
+                    ->image()
+                    ->disk('public_root')
+                    ->directory('employees/onboarding/passport')
+                    ->required(),
+                FileUpload::make('national_id_file_path')
+                    ->label('NID upload')
+                    ->disk('public_root')
+                    ->acceptedFileTypes(['image/*', 'application/pdf'])
+                    ->directory('employees/onboarding/nid')
+                    ->required(),
+                TextInput::make('emergency_contact_name')
+                    ->label('Emergency contact name')
+                    ->required()
+                    ->maxLength(255),
+                TextInput::make('emergency_contact_phone')
+                    ->label('Emergency contact phone number')
+                    ->required()
+                    ->tel(),
+                TextInput::make('emergency_contact_relation')
+                    ->label('Emergency contact relation')
+                    ->required()
+                    ->maxLength(255),
+                Checkbox::make('agreed_to_terms')
+                    ->label('I agree to the terms and conditions')
+                    ->accepted()
+                    ->required(),
             ])
             ->statePath('data');
     }
@@ -88,6 +156,32 @@ class AcceptInvitation extends SimplePage
         }
 
         $user->save();
+
+        $employee = Employee::query()
+            ->where('user_id', $user->id)
+            ->orWhere('work_email', $this->invitationModel->email)
+            ->orWhere('private_email', $this->invitationModel->email)
+            ->first();
+
+        if ($employee) {
+            $employee->update([
+                'name'                       => $state['name'],
+                'user_id'                    => $user->id,
+                'work_email'                 => $this->invitationModel->email,
+                'identification_id'          => $state['nid'],
+                'mobile_phone'               => $state['phone_number'],
+                'private_street1'            => $state['address'],
+                'bank_name'                  => $state['bank_name'],
+                'bank_account_number'        => $state['bank_account_number'],
+                'passport_image_path'        => $state['passport_image_path'] ?? null,
+                'national_id_file_path'      => $state['national_id_file_path'] ?? null,
+                'emergency_contact'          => $state['emergency_contact_name'],
+                'emergency_phone'            => $state['emergency_contact_phone'],
+                'emergency_contact_relation' => $state['emergency_contact_relation'],
+                'agreed_to_terms'            => true,
+                'agreed_to_terms_at'         => now(),
+            ]);
+        }
 
         $defaultRoleId = app(UserSettings::class)->default_role_id;
 

@@ -16,7 +16,11 @@ class EmployeePolicy
      */
     public function viewAny(User $user): bool
     {
-        return $user->can('view_any_employee_employee');
+        if ($this->isEmployeeRole($user)) {
+            return $user->can('view_employee_employee');
+        }
+
+        return $user->can('view_any_employee_employee') || $user->can('view_employee_employee');
     }
 
     /**
@@ -24,6 +28,15 @@ class EmployeePolicy
      */
     public function view(User $user, Employee $employee): bool
     {
+        if ($this->isEmployeeRole($user)) {
+            $userEmail = mb_strtolower(trim((string) $user->email));
+            $workEmail = mb_strtolower(trim((string) ($employee->work_email ?? '')));
+            $privateEmail = mb_strtolower(trim((string) ($employee->private_email ?? '')));
+
+            return (int) ($employee->user_id ?? 0) === (int) $user->id
+                || ($userEmail !== '' && ($workEmail === $userEmail || $privateEmail === $userEmail));
+        }
+
         return $user->can('view_employee_employee');
     }
 
@@ -97,5 +110,10 @@ class EmployeePolicy
         }
 
         return $this->hasAccess($user, $employee, 'coach');
+    }
+
+    private function isEmployeeRole(User $user): bool
+    {
+        return $user->hasRole('employee');
     }
 }

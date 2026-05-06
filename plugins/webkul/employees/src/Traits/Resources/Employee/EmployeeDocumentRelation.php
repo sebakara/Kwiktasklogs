@@ -26,9 +26,13 @@ use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Request;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\URL;
+use Illuminate\Support\Str;
 use InvalidArgumentException;
+use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
 use Webkul\Employee\Enums\EmployeeDocumentStatus;
 use Webkul\Employee\Services\EmployeeSignedDocumentPdfService;
 
@@ -54,7 +58,13 @@ trait EmployeeDocumentRelation
                         ->disk('public_root')
                         ->directory('employees/documents/original')
                         ->visibility('public')
-                        ->preserveFilenames()
+                        ->getUploadedFileNameForStorageUsing(function (TemporaryUploadedFile $file): string {
+                            $baseName = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
+                            $extension = strtolower((string) $file->getClientOriginalExtension());
+                            $safeBaseName = Str::slug($baseName) ?: 'employee-document';
+
+                            return $safeBaseName.'-'.now()->format('YmdHis').'-'.Str::lower(Str::random(8)).'.'.$extension;
+                        })
                         ->openable()
                         ->downloadable(),
                     FileUpload::make('signed_file_path')
@@ -146,7 +156,7 @@ trait EmployeeDocumentRelation
                     ->icon('heroicon-o-pencil-square')
                     ->color('success')
                     ->visible(fn ($record): bool => $record->status === EmployeeDocumentStatus::PendingSignature->value
-                        && (int) ($record->employee?->user_id ?? 0) === (int) Auth::id())
+                        && $this->isAuthenticatedUserEmployeeOwner($record->employee))
                     ->schema([
                         Placeholder::make('sign_note')
                             ->label('Sign electronically')
@@ -163,7 +173,7 @@ trait EmployeeDocumentRelation
                     ])
                     ->action(function ($record, array $data): void {
                         $authUser = Auth::user();
-                        $isOwner = (int) ($record->employee?->user_id ?? 0) === (int) ($authUser?->id ?? 0);
+                        $isOwner = $this->isAuthenticatedUserEmployeeOwner($record->employee);
 
                         if (! $isOwner) {
                             Notification::make()
@@ -219,10 +229,23 @@ trait EmployeeDocumentRelation
                         $signedName = trim((string) Arr::get($data, 'signed_name'));
                         $signedAt = now();
 
-                        $filename = 'employee-document-'.$record->id.'-signed-'.$signedAt->format('YmdHis').'.pdf';
+                        $titleSlug = Str::slug((string) $record->title) ?: 'employee-document';
+                        $filename = $titleSlug.'-record-'.$record->id.'-signed-'.$signedAt->format('YmdHis').'.pdf';
                         $signedFilePath = 'employees/documents/signed/'.$filename;
+                        $tempSignedBase = tempnam(sys_get_temp_dir(), 'employee-signed-');
 
-                        $absoluteSigned = Storage::disk('public_root')->path($signedFilePath);
+                        if ($tempSignedBase === false) {
+                            Notification::make()
+                                ->danger()
+                                ->title('Signing failed — temporary file could not be created.')
+                                ->body(__('Please notify an administrator.'))
+                                ->send();
+
+                            return;
+                        }
+
+                        @unlink($tempSignedBase);
+                        $temporarySignedPath = $tempSignedBase.'.pdf';
 
                         $originalSha256 = hash_file('sha256', $absoluteOriginal);
 
@@ -239,11 +262,16 @@ trait EmployeeDocumentRelation
                         ]);
 
                         $bindingFingerprint = hash('sha256', $bindingPayload);
+                        $verificationUrl = URL::temporarySignedRoute(
+                            'employee-documents.verify-signature',
+                            now()->addYears(10),
+                            ['document' => $record->id]
+                        );
 
                         try {
                             app(EmployeeSignedDocumentPdfService::class)->mergeWithElectronicSignatureCertificate(
                                 $absoluteOriginal,
-                                $absoluteSigned,
+                                $temporarySignedPath,
                                 $signedAt,
                                 $record->id,
                                 (string) $record->title,
@@ -255,6 +283,7 @@ trait EmployeeDocumentRelation
                                 $request->userAgent(),
                                 $originalSha256,
                                 $bindingFingerprint,
+                                $verificationUrl,
                             );
                         } catch (\Throwable $exception) {
                             report($exception);
@@ -274,6 +303,46 @@ trait EmployeeDocumentRelation
                             return;
                         }
 
+                        if (! is_file($temporarySignedPath)) {
+                            Notification::make()
+                                ->danger()
+                                ->title('Signing failed — generated signed file was not found.')
+                                ->body(__('Please notify an administrator.'))
+                                ->send();
+
+                            return;
+                        }
+
+                        $signedPdfContents = file_get_contents($temporarySignedPath);
+
+                        if ($signedPdfContents === false) {
+                            @unlink($temporarySignedPath);
+
+                            Notification::make()
+                                ->danger()
+                                ->title('Signing failed — generated file could not be read.')
+                                ->body(__('Please notify an administrator.'))
+                                ->send();
+
+                            return;
+                        }
+
+                        @unlink($temporarySignedPath);
+
+                        $absoluteSigned = public_path($signedFilePath);
+                        File::ensureDirectoryExists(dirname($absoluteSigned));
+                        $bytesWritten = @file_put_contents($absoluteSigned, $signedPdfContents);
+
+                        if ($bytesWritten === false || ! is_file($absoluteSigned)) {
+                            Notification::make()
+                                ->danger()
+                                ->title('Signing failed — signed file is missing after storage write.')
+                                ->body(__('Please notify an administrator.'))
+                                ->send();
+
+                            return;
+                        }
+
                         $outputSha256 = hash_file('sha256', $absoluteSigned);
 
                         $signatureHashStored = hash('sha256', implode('|', ['v2-esig-record', $bindingFingerprint, $outputSha256]));
@@ -287,6 +356,7 @@ trait EmployeeDocumentRelation
                             'signed_ip_address' => $request->ip(),
                             'signed_user_agent' => (string) $request->userAgent(),
                             'signature_hash'    => $signatureHashStored,
+                            'signed_file_sha256'=> $outputSha256,
                         ]);
 
                         Notification::make()
@@ -295,6 +365,8 @@ trait EmployeeDocumentRelation
                             ->send();
                     }),
                 EditAction::make()
+                    ->visible(fn ($record): bool => ! $this->isEmployeeDocumentOwner($record))
+                    ->authorize(fn ($record): bool => ! $this->isEmployeeDocumentOwner($record))
                     ->mutateDataUsing(function (array $data): array {
                         if (! empty($data['signed_file_path']) && empty($data['signed_by_user_id'])) {
                             $data['signed_by_user_id'] = Auth::id();
@@ -411,7 +483,7 @@ trait EmployeeDocumentRelation
             return false;
         }
 
-        return (int) ($record->employee?->user_id ?? 0) === (int) Auth::id();
+        return $this->isAuthenticatedUserEmployeeOwner($record->employee);
     }
 
     private function isCurrentUserEmployeeOwnerForContext(): bool
@@ -422,6 +494,34 @@ trait EmployeeDocumentRelation
             return false;
         }
 
-        return (int) ($ownerRecord->user_id ?? 0) === (int) Auth::id();
+        return $this->emailEqualsAuthenticatedUser($ownerRecord->work_email)
+            || $this->emailEqualsAuthenticatedUser($ownerRecord->private_email)
+            || $this->emailEqualsAuthenticatedUser($ownerRecord->user?->email);
+    }
+
+    private function isAuthenticatedUserEmployeeOwner(mixed $employee): bool
+    {
+        if (! $employee) {
+            return false;
+        }
+
+        return $this->emailEqualsAuthenticatedUser($employee->work_email)
+            || $this->emailEqualsAuthenticatedUser($employee->private_email)
+            || $this->emailEqualsAuthenticatedUser($employee->user?->email);
+    }
+
+    private function emailEqualsAuthenticatedUser(?string $email): bool
+    {
+        if (! $email) {
+            return false;
+        }
+
+        $authenticatedEmail = Auth::user()?->email;
+
+        if (! $authenticatedEmail) {
+            return false;
+        }
+
+        return mb_strtolower(trim($email)) === mb_strtolower(trim($authenticatedEmail));
     }
 }
