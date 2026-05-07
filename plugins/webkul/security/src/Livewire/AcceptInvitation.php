@@ -12,9 +12,9 @@ use Filament\Forms\Components\TextInput;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Pages\Concerns\InteractsWithFormActions;
 use Filament\Pages\SimplePage;
-use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
+use Filament\Support\Enums\Width;
 use Illuminate\Validation\Rules\Password;
 use Webkul\Employee\Models\Employee;
 use Webkul\Security\Models\Invitation;
@@ -27,6 +27,8 @@ class AcceptInvitation extends SimplePage
     use InteractsWithForms;
 
     protected string $view = 'security::livewire.accept-invitation';
+
+    protected Width|string|null $maxWidth = Width::FiveExtraLarge;
 
     public int $invitation;
 
@@ -80,28 +82,22 @@ class AcceptInvitation extends SimplePage
                 Section::make(__('security::livewire/accept-invitation.form.section.employer_provided.label'))
                     ->description(__('security::livewire/accept-invitation.form.section.employer_provided.description'))
                     ->schema([
-                        Grid::make([
-                            'default' => 1,
-                            'sm'      => 2,
-                        ])
-                            ->schema([
-                                TextInput::make('name')
-                                    ->label(__('security::livewire/accept-invitation.form.name.label'))
-                                    ->helperText(__('security::livewire/accept-invitation.form.name.helper'))
-                                    ->required()
-                                    ->readOnly()
-                                    ->dehydrated(true)
-                                    ->maxLength(255)
-                                    ->autofocus(),
-                                TextInput::make('email')
-                                    ->label(__('security::livewire/accept-invitation.form.email.label'))
-                                    ->helperText(__('security::livewire/accept-invitation.form.email.helper'))
-                                    ->email()
-                                    ->required()
-                                    ->readOnly()
-                                    ->dehydrated(true)
-                                    ->maxLength(255),
-                            ]),
+                        TextInput::make('name')
+                            ->label(__('security::livewire/accept-invitation.form.name.label'))
+                            ->helperText(__('security::livewire/accept-invitation.form.name.helper'))
+                            ->required()
+                            ->readOnly()
+                            ->dehydrated(true)
+                            ->maxLength(255)
+                            ->autofocus(),
+                        TextInput::make('email')
+                            ->label(__('security::livewire/accept-invitation.form.email.label'))
+                            ->helperText(__('security::livewire/accept-invitation.form.email.helper'))
+                            ->email()
+                            ->required()
+                            ->readOnly()
+                            ->dehydrated(true)
+                            ->maxLength(255),
                     ]),
                 TextInput::make('nid')
                     ->label('NID (National ID)')
@@ -130,24 +126,18 @@ class AcceptInvitation extends SimplePage
                 Section::make(__('security::livewire/accept-invitation.form.section.banking.label'))
                     ->description(__('security::livewire/accept-invitation.form.section.banking.description'))
                     ->schema([
-                        Grid::make([
-                            'default' => 1,
-                            'md'      => 3,
-                        ])
-                            ->schema([
-                                TextInput::make('bank_name')
-                                    ->label(__('security::livewire/accept-invitation.form.bank.bank_name'))
-                                    ->required()
-                                    ->maxLength(255),
-                                TextInput::make('bank_account_holder_name')
-                                    ->label(__('security::livewire/accept-invitation.form.bank.account_name'))
-                                    ->required()
-                                    ->maxLength(255),
-                                TextInput::make('bank_account_number')
-                                    ->label(__('security::livewire/accept-invitation.form.bank.account_number'))
-                                    ->required()
-                                    ->maxLength(255),
-                            ]),
+                        TextInput::make('bank_name')
+                            ->label(__('security::livewire/accept-invitation.form.bank.bank_name'))
+                            ->required()
+                            ->maxLength(255),
+                        TextInput::make('bank_account_holder_name')
+                            ->label(__('security::livewire/accept-invitation.form.bank.account_name'))
+                            ->required()
+                            ->maxLength(255),
+                        TextInput::make('bank_account_number')
+                            ->label(__('security::livewire/accept-invitation.form.bank.account_number'))
+                            ->required()
+                            ->maxLength(255),
                     ]),
                 FileUpload::make('passport_image_path')
                     ->label('Passport image upload')
