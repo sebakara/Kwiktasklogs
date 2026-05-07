@@ -27,14 +27,16 @@ return [
                 'title' => 'Additional Information',
 
                 'fields' => [
-                    'project-manager'             => 'Project Manager',
-                    'customer'                    => 'Customer',
-                    'start-date'                  => 'Start Date',
-                    'end-date'                    => 'End Date',
-                    'allocated-hours'             => 'Allocated Hours',
-                    'allocated-hours-helper-text' => 'In hours (Eg. 1.5 hours means 1 hour 30 minutes)',
-                    'tags'                        => 'Tags',
-                    'company'                     => 'Company',
+                    'project-manager'                    => 'Project Manager',
+                    'customer'                           => 'Customer',
+                    'start-date'                         => 'Start Date',
+                    'end-date'                           => 'End Date',
+                    'allocated-hours'                    => 'Allocated Hours',
+                    'allocated-hours-helper-text'        => 'In hours (Eg. 1.5 hours means 1 hour 30 minutes)',
+                    'tags'                               => 'Tags',
+                    'company'                            => 'Company',
+                    'documentation-assignee'             => 'Documentation assignee',
+                    'documentation-assignee-helper-text' => 'This employee can create and edit all documentation for this project. Only users who can create project tasks can set this field.',
                 ],
             ],
 
@@ -149,6 +151,7 @@ return [
 
                 'entries' => [
                     'project-manager'        => 'Project Manager',
+                    'documentation-assignee' => 'Documentation assignee',
                     'customer'               => 'Customer',
                     'project-timeline'       => 'Project Timeline',
                     'allocated-hours'        => 'Allocated Hours',

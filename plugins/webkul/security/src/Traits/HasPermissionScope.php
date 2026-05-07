@@ -81,7 +81,13 @@ trait HasPermissionScope
             return $query;
         }
 
-        return $query->where(function (Builder $subQuery) use ($userIds) {
+        $documentationAssigneeColumn = 'documentation_assignee_id';
+        $hasDocumentationAssigneeColumn = $this->getConnection()->getSchemaBuilder()->hasColumn(
+            $this->getTable(),
+            $documentationAssigneeColumn,
+        );
+
+        return $query->where(function (Builder $subQuery) use ($userIds, $user, $documentationAssigneeColumn, $hasDocumentationAssigneeColumn) {
             $subQuery->whereIn($this->getOwnerColumn(), $userIds);
 
             $assignmentColumn = $this->getAssignmentColumn();
@@ -104,6 +110,10 @@ trait HasPermissionScope
                         ->whereColumn($this->getTable().'.id', $pivotTable.'.'.$pivotForeignKey)
                         ->whereIn($pivotTable.'.'.$pivotRelatedKey, $userIds);
                 });
+            }
+
+            if ($hasDocumentationAssigneeColumn) {
+                $subQuery->orWhere($documentationAssigneeColumn, $user->id);
             }
         });
     }

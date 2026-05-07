@@ -16,7 +16,13 @@ class ProjectPolicy
      */
     public function viewAny(User $user): bool
     {
-        return $user->can('view_any_project_project');
+        if ($user->can('view_any_project_project')) {
+            return true;
+        }
+
+        return Project::query()
+            ->where('documentation_assignee_id', $user->id)
+            ->exists();
     }
 
     /**
@@ -24,7 +30,11 @@ class ProjectPolicy
      */
     public function view(User $user, Project $project): bool
     {
-        return $user->can('view_project_project');
+        if ($user->can('view_project_project')) {
+            return true;
+        }
+
+        return (int) ($project->documentation_assignee_id ?? 0) === (int) $user->id;
     }
 
     /**

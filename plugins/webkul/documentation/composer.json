@@ -1,0 +1,29 @@
+{
+    "name": "webkul/documentation",
+    "description": "In-app documentation and help center",
+    "authors": [
+        {
+            "name": "Aureus ERP",
+            "email": "support@aureuserp.in"
+        }
+    ],
+    "extra": {
+        "laravel": {
+            "providers": [
+                "Webkul\\Documentation\\DocumentationServiceProvider"
+            ],
+            "aliases": {}
+        }
+    },
+    "autoload": {
+        "psr-4": {
+            "Webkul\\Documentation\\": "src/",
+            "Webkul\\Documentation\\Database\\Seeders\\": "database/seeders/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Webkul\\Documentation\\Tests\\": "tests/"
+        }
+    }
+}

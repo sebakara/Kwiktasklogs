@@ -56,6 +56,7 @@ class Project extends Model implements Sortable
         'partner_id',
         'company_id',
         'user_id',
+        'documentation_assignee_id',
         'creator_id',
     ];
 
@@ -117,6 +118,11 @@ class Project extends Model implements Sortable
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function documentationAssignee(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'documentation_assignee_id');
     }
 
     public function stage(): BelongsTo

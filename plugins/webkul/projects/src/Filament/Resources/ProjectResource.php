@@ -76,7 +76,7 @@ class ProjectResource extends Resource
 
     protected static ?string $slug = 'project/projects';
 
-    protected static ?\Filament\Pages\Enums\SubNavigationPosition $subNavigationPosition = SubNavigationPosition::Top;
+    protected static ?SubNavigationPosition $subNavigationPosition = SubNavigationPosition::Top;
 
     protected static ?string $recordTitleAttribute = 'name';
 
@@ -137,6 +137,27 @@ class ProjectResource extends Resource
                                     ->searchable()
                                     ->preload()
                                     ->createOptionForm(fn (Schema $schema) => UserResource::form($schema)),
+                                Select::make('documentation_assignee_id')
+                                    ->label(__('projects::filament/resources/project.form.sections.additional.fields.documentation-assignee'))
+                                    ->helperText(__('projects::filament/resources/project.form.sections.additional.fields.documentation-assignee-helper-text'))
+                                    ->relationship(
+                                        name: 'documentationAssignee',
+                                        titleAttribute: 'name',
+                                        modifyQueryUsing: fn (Builder $query) => $query->where('is_active', true)->whereHas('employee')
+                                    )
+                                    ->searchable()
+                                    ->preload()
+                                    ->visible(function (?Project $record): bool {
+                                        $user = Auth::user();
+
+                                        if (! $user?->can('create_project_task')) {
+                                            return false;
+                                        }
+
+                                        return $record
+                                            ? $user->can('update', $record)
+                                            : $user->can('create_project_project');
+                                    }),
                                 Select::make('partner_id')
                                     ->label(__('projects::filament/resources/project.form.sections.additional.fields.customer'))
                                     ->relationship('partner', 'name')
@@ -527,6 +548,11 @@ class ProjectResource extends Resource
                                         TextEntry::make('user.name')
                                             ->label(__('projects::filament/resources/project.infolist.sections.additional.entries.project-manager'))
                                             ->icon('heroicon-o-user')
+                                            ->placeholder('—'),
+
+                                        TextEntry::make('documentationAssignee.name')
+                                            ->label(__('projects::filament/resources/project.infolist.sections.additional.entries.documentation-assignee'))
+                                            ->icon('heroicon-o-book-open')
                                             ->placeholder('—'),
 
                                         TextEntry::make('partner.name')

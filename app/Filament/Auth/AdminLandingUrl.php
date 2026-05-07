@@ -3,7 +3,6 @@
 namespace App\Filament\Auth;
 
 use Filament\Facades\Filament;
-use Webkul\Employee\Filament\Pages\InternalChat;
 use Webkul\Project\Filament\Pages\Dashboard as ProjectDashboard;
 use Webkul\Security\Models\User;
 use Webkul\Support\Filament\Pages\Profile;
@@ -27,10 +26,6 @@ final class AdminLandingUrl
 
         if ($user->can(self::PROJECT_DASHBOARD_PERMISSION)) {
             return ProjectDashboard::getUrl();
-        }
-
-        if ($user->is_active) {
-            return InternalChat::getUrl();
         }
 
         return Profile::getUrl();

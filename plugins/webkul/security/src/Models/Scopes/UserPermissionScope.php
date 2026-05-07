@@ -35,6 +35,12 @@ class UserPermissionScope implements Scope
             return;
         }
 
+        $table = $model->getTable();
+        $hasDocumentationAssigneeColumn = $model->getConnection()->getSchemaBuilder()->hasColumn(
+            $table,
+            'documentation_assignee_id',
+        );
+
         if ($user->resource_permission === PermissionType::INDIVIDUAL) {
             $builder->whereHas($this->ownerRelation, function ($q) use ($user) {
                 $q->where('users.id', $user->id);
@@ -43,6 +49,10 @@ class UserPermissionScope implements Scope
             $builder->orWhereHas('followers', function ($q) use ($user) {
                 $q->where('chatter_followers.partner_id', $user->partner_id);
             });
+
+            if ($hasDocumentationAssigneeColumn) {
+                $builder->orWhere($table.'.documentation_assignee_id', $user->id);
+            }
         }
 
         if ($user->resource_permission === PermissionType::GROUP) {
@@ -51,6 +61,10 @@ class UserPermissionScope implements Scope
             $builder->whereHas("$this->ownerRelation.teams", function ($q) use ($teamIds) {
                 $q->whereIn('teams.id', $teamIds);
             });
+
+            if ($hasDocumentationAssigneeColumn) {
+                $builder->orWhere($table.'.documentation_assignee_id', $user->id);
+            }
         }
     }
 }
