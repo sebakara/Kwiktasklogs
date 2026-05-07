@@ -59,6 +59,7 @@ use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
 use Webkul\Employee\Enums\DistanceUnit;
 use Webkul\Employee\Enums\Gender;
 use Webkul\Employee\Enums\MaritalStatus;
@@ -1579,6 +1580,10 @@ class EmployeeResource extends Resource
                                                         ->placeholder('—')
                                                         ->url(fn (?string $state) => $state ? "tel:{$state}" : '#')
                                                         ->icon('heroicon-o-phone'),
+                                                    TextEntry::make('emergency_contact_relation')
+                                                        ->label(__('employees::filament/resources/employee.infolist.tabs.private-information.entries.contact-relation'))
+                                                        ->placeholder('—')
+                                                        ->icon('heroicon-o-user-group'),
                                                 ]),
                                             Fieldset::make(__('employees::filament/resources/employee.infolist.tabs.private-information.entries.work-permit'))
                                                 ->schema([
@@ -1687,6 +1692,108 @@ class EmployeeResource extends Resource
                                                         ->icon('heroicon-o-phone')
                                                         ->placeholder('—')
                                                         ->prefix('+'),
+                                                ]),
+                                        ])->columnSpan(1),
+                                    ]),
+                            ]),
+                        Tab::make(__('employees::filament/resources/employee.infolist.tabs.onboarding.title'))
+                            ->icon('heroicon-o-clipboard-document-check')
+                            ->schema([
+                                Grid::make(['default' => 1, 'lg' => 2])
+                                    ->schema([
+                                        Group::make([
+                                            Fieldset::make(__('employees::filament/resources/employee.infolist.tabs.onboarding.entries.submitted-profile'))
+                                                ->schema([
+                                                    TextEntry::make('identification_id')
+                                                        ->label(__('employees::filament/resources/employee.infolist.tabs.private-information.entries.identification-id'))
+                                                        ->icon('heroicon-o-document-text')
+                                                        ->placeholder('—')
+                                                        ->copyable()
+                                                        ->copyMessage(__('employees::filament/resources/employee.infolist.tabs.private-information.entries.identification-id-copy-message'))
+                                                        ->copyMessageDuration(1500),
+                                                    TextEntry::make('mobile_phone')
+                                                        ->label(__('employees::filament/resources/employee.infolist.tabs.onboarding.entries.phone-number'))
+                                                        ->placeholder('—')
+                                                        ->url(fn (?string $state) => $state ? "tel:{$state}" : '#')
+                                                        ->icon('heroicon-o-phone')
+                                                        ->iconPosition(IconPosition::Before),
+                                                    TextEntry::make('private_street1')
+                                                        ->label(__('employees::filament/resources/employee.infolist.tabs.onboarding.entries.address'))
+                                                        ->placeholder('—')
+                                                        ->icon('heroicon-o-map')
+                                                        ->columnSpanFull(),
+                                                ]),
+                                            Fieldset::make(__('employees::filament/resources/employee.infolist.tabs.onboarding.entries.bank-details'))
+                                                ->schema([
+                                                    TextEntry::make('bank_name')
+                                                        ->label(__('employees::filament/resources/employee.form.tabs.private-information.fields.bank-name'))
+                                                        ->placeholder('—')
+                                                        ->icon('heroicon-o-building-library'),
+                                                    TextEntry::make('bank_account_holder_name')
+                                                        ->label(__('employees::filament/resources/employee.form.tabs.private-information.fields.bank-account-holder-name'))
+                                                        ->placeholder('—')
+                                                        ->icon('heroicon-o-user'),
+                                                    TextEntry::make('bank_account_number')
+                                                        ->label(__('employees::filament/resources/employee.form.tabs.private-information.fields.bank-account-number'))
+                                                        ->placeholder('—')
+                                                        ->icon('heroicon-o-hashtag')
+                                                        ->copyable(),
+                                                ]),
+                                            Fieldset::make(__('employees::filament/resources/employee.infolist.tabs.private-information.entries.emergency-contact'))
+                                                ->schema([
+                                                    TextEntry::make('emergency_contact')
+                                                        ->label(__('employees::filament/resources/employee.infolist.tabs.private-information.entries.contact-name'))
+                                                        ->placeholder('—')
+                                                        ->icon('heroicon-o-user'),
+                                                    TextEntry::make('emergency_phone')
+                                                        ->label(__('employees::filament/resources/employee.infolist.tabs.private-information.entries.contact-phone'))
+                                                        ->placeholder('—')
+                                                        ->url(fn (?string $state) => $state ? "tel:{$state}" : '#')
+                                                        ->icon('heroicon-o-phone'),
+                                                    TextEntry::make('emergency_contact_relation')
+                                                        ->label(__('employees::filament/resources/employee.infolist.tabs.private-information.entries.contact-relation'))
+                                                        ->placeholder('—')
+                                                        ->icon('heroicon-o-user-group'),
+                                                ]),
+                                            Fieldset::make(__('employees::filament/resources/employee.infolist.tabs.onboarding.entries.terms'))
+                                                ->schema([
+                                                    IconEntry::make('agreed_to_terms')
+                                                        ->label(__('employees::filament/resources/employee.infolist.tabs.onboarding.entries.agreed-to-terms'))
+                                                        ->color(fn ($state) => $state ? 'success' : 'danger'),
+                                                    TextEntry::make('agreed_to_terms_at')
+                                                        ->label(__('employees::filament/resources/employee.infolist.tabs.onboarding.entries.agreed-to-terms-at'))
+                                                        ->placeholder('—')
+                                                        ->icon('heroicon-o-calendar-days')
+                                                        ->dateTime('F j, Y g:i A'),
+                                                ])
+                                                ->columns(2),
+                                        ])->columnSpan(1),
+                                        Group::make([
+                                            Fieldset::make(__('employees::filament/resources/employee.infolist.tabs.onboarding.entries.documents'))
+                                                ->schema([
+                                                    ImageEntry::make('passport_image_path')
+                                                        ->label(__('employees::filament/resources/employee.infolist.tabs.onboarding.entries.passport-photo'))
+                                                        ->imageHeight(240)
+                                                        ->columnSpanFull()
+                                                        ->placeholder('—')
+                                                        ->state(fn (Employee $record): ?string => filled($record->passport_image_path)
+                                                            ? Storage::disk('public_root')->url($record->passport_image_path)
+                                                            : null),
+                                                    TextEntry::make('national_id_file_path')
+                                                        ->label(__('employees::filament/resources/employee.infolist.tabs.onboarding.entries.national-id-document'))
+                                                        ->icon('heroicon-o-document')
+                                                        ->placeholder('—')
+                                                        ->formatStateUsing(function (?string $state): string {
+                                                            if (! filled($state)) {
+                                                                return '—';
+                                                            }
+
+                                                            return (string) str($state)->afterLast('/');
+                                                        })
+                                                        ->url(fn (?string $state): ?string => filled($state)
+                                                            ? Storage::disk('public_root')->url($state)
+                                                            : null)
+                                                        ->openUrlInNewTab(),
                                                 ]),
                                         ])->columnSpan(1),
                                     ]),

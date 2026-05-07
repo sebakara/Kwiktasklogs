@@ -24,7 +24,6 @@ use Illuminate\Validation\ValidationException;
 use Spatie\Permission\Traits\HasRoles;
 use Webkul\Employee\Models\Department;
 use Webkul\Employee\Models\Employee;
-use Webkul\Employee\Models\EmployeeChatMessage;
 use Webkul\Partner\Models\Partner;
 use Webkul\Security\Enums\PermissionType;
 use Webkul\Security\Traits\HasPermissionScope;
@@ -91,16 +90,6 @@ class User extends BaseUser implements FilamentUser, HasAppAuthentication, HasAp
     public function employee(): HasOne
     {
         return $this->hasOne(Employee::class, 'user_id');
-    }
-
-    public function sentEmployeeChatMessages(): HasMany
-    {
-        return $this->hasMany(EmployeeChatMessage::class, 'sender_id');
-    }
-
-    public function receivedEmployeeChatMessages(): HasMany
-    {
-        return $this->hasMany(EmployeeChatMessage::class, 'recipient_id');
     }
 
     public function departments(): HasMany

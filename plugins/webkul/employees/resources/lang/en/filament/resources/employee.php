@@ -356,6 +356,7 @@ return [
                     'emergency-contact'           => 'Emergency Contact',
                     'contact-name'                => 'Contact Name',
                     'contact-phone'               => 'Contact Phone',
+                    'contact-relation'            => 'Relationship to employee',
                     'work-permit'                 => 'Work Permit',
                     'visa-number'                 => 'Visa Number',
                     'work-permit-number'          => 'Work Permit Number',
@@ -372,6 +373,23 @@ return [
                     'country-of-birth'            => 'Country of Birth',
                     'phone-code'                  => 'Phone Code',
 
+                ],
+            ],
+
+            'onboarding' => [
+                'title' => 'Onboarding',
+
+                'entries' => [
+                    'submitted-profile'    => 'Submitted profile',
+                    'phone-number'         => 'Phone number',
+                    'address'              => 'Address',
+                    'bank-details'         => 'Bank details',
+                    'documents'            => 'Documents',
+                    'passport-photo'       => 'Passport photo',
+                    'national-id-document' => 'National ID document',
+                    'terms'                => 'Terms & conditions',
+                    'agreed-to-terms'      => 'Accepted terms',
+                    'agreed-to-terms-at'   => 'Accepted at',
                 ],
             ],
 

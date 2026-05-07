@@ -27,14 +27,16 @@ return [
                 'title' => 'معلومات إضافية',
 
                 'fields' => [
-                    'project-manager'             => 'مدير المشروع',
-                    'customer'                    => 'العميل',
-                    'start-date'                  => 'تاريخ البداية',
-                    'end-date'                    => 'تاريخ النهاية',
-                    'allocated-hours'             => 'الساعات المخصصة',
-                    'allocated-hours-helper-text' => 'بالساعات (مثال: 1.5 ساعة تعني ساعة و30 دقيقة)',
-                    'tags'                        => 'الوسوم',
-                    'company'                     => 'الشركة',
+                    'project-manager'                    => 'مدير المشروع',
+                    'customer'                           => 'العميل',
+                    'start-date'                         => 'تاريخ البداية',
+                    'end-date'                           => 'تاريخ النهاية',
+                    'allocated-hours'                    => 'الساعات المخصصة',
+                    'allocated-hours-helper-text'        => 'بالساعات (مثال: 1.5 ساعة تعني ساعة و30 دقيقة)',
+                    'tags'                               => 'الوسوم',
+                    'company'                            => 'الشركة',
+                    'documentation-assignee'             => 'المسؤول عن التوثيق',
+                    'documentation-assignee-helper-text' => 'يمكن لهذا الموظف إنشاء وتحرير كل توثيق المشروع. يمكن فقط للمستخدمين الذين يحق لهم إنشاء مهام المشروع تعيين هذا الحقل.',
                 ],
             ],
 
@@ -149,6 +151,7 @@ return [
 
                 'entries' => [
                     'project-manager'        => 'مدير المشروع',
+                    'documentation-assignee' => 'المسؤول عن التوثيق',
                     'customer'               => 'العميل',
                     'project-timeline'       => 'الجدول الزمني للمشروع',
                     'allocated-hours'        => 'الساعات المخصصة',

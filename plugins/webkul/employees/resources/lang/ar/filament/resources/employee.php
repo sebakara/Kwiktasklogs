@@ -356,6 +356,7 @@ return [
                     'emergency-contact'           => 'جهة اتصال الطوارئ',
                     'contact-name'                => 'اسم جهة الاتصال',
                     'contact-phone'               => 'هاتف جهة الاتصال',
+                    'contact-relation'            => 'صلة القرابة بالموظف',
                     'work-permit'                 => 'تصريح العمل',
                     'visa-number'                 => 'رقم التأشيرة',
                     'work-permit-number'          => 'رقم تصريح العمل',
@@ -372,6 +373,23 @@ return [
                     'country-of-birth'            => 'بلد الميلاد',
                     'phone-code'                  => 'رمز الهاتف',
 
+                ],
+            ],
+
+            'onboarding' => [
+                'title' => 'التسجيل',
+
+                'entries' => [
+                    'submitted-profile'    => 'البيانات المُرسلة',
+                    'phone-number'         => 'رقم الهاتف',
+                    'address'              => 'العنوان',
+                    'bank-details'         => 'البيانات البنكية',
+                    'documents'            => 'المستندات',
+                    'passport-photo'       => 'صورة جواز السفر',
+                    'national-id-document' => 'مستند الهوية الوطنية',
+                    'terms'                => 'الشروط والأحكام',
+                    'agreed-to-terms'      => 'قبول الشروط',
+                    'agreed-to-terms-at'   => 'تاريخ القبول',
                 ],
             ],
 
