@@ -2,7 +2,6 @@
 
 namespace Webkul\Security\Livewire;
 
-use App\Filament\Auth\AdminLandingUrl;
 use Filament\Actions\Action;
 use Filament\Actions\ActionGroup;
 use Filament\Facades\Filament;
@@ -250,10 +249,15 @@ class AcceptInvitation extends SimplePage
 
         $this->invitationModel->delete();
 
-        Filament::auth()->login($user);
-        session()->regenerate();
+        $loginUrl = Filament::getPanel('admin')->getLoginUrl();
 
-        $this->redirect(AdminLandingUrl::forAuthenticatedUser($user));
+        if (! is_string($loginUrl) || $loginUrl === '') {
+            $loginUrl = url('/admin/login');
+        }
+
+        session()->flash('status', __('security::livewire/accept-invitation.flash.onboarding_complete'));
+
+        $this->redirect($loginUrl);
     }
 
     /**
@@ -270,7 +274,7 @@ class AcceptInvitation extends SimplePage
     {
         return Action::make('register')
             ->label(__('security::livewire/accept-invitation.form.actions.register.label'))
-            ->submit('register');
+            ->submit('create');
     }
 
     public function getHeading(): string

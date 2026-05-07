@@ -77,4 +77,8 @@ return [
 
     ],
 
+    'flash' => [
+        'onboarding_complete' => 'Onboarding is complete. Sign in with your work email and the password you chose.',
+    ],
+
 ];
