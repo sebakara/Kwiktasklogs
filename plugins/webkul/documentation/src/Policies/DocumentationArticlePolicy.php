@@ -29,8 +29,22 @@ class DocumentationArticlePolicy
             return true;
         }
 
-        return Project::query()->where('documentation_assignee_id', $user->id)->exists()
-            || DocumentationArticle::query()->where('assignee_id', $user->id)->exists();
+        if (Project::query()->where('documentation_assignee_id', $user->id)->exists()
+            || DocumentationArticle::query()->where('assignee_id', $user->id)->exists()) {
+            return true;
+        }
+
+        $projectId = (int) (request()->query('project') ?: request()->query('project_id'));
+
+        if ($projectId > 0) {
+            $project = Project::query()->find($projectId);
+
+            if ($project && $user->can('view', $project)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     public function view(User $user, DocumentationArticle $documentationArticle): bool

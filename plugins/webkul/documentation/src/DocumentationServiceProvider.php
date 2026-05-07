@@ -20,7 +20,6 @@ class DocumentationServiceProvider extends PackageServiceProvider
     {
         $package->name(static::$name)
             ->hasTranslations()
-            ->hasViews()
             ->hasMigrations([
                 '2026_05_07_151000_create_documentation_articles_table',
                 '2026_05_07_153500_add_project_and_assignee_to_documentation_articles_table',
