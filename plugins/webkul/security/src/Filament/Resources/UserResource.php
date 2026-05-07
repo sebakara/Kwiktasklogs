@@ -6,7 +6,6 @@ use Closure;
 use Filament\Actions\Action;
 use Filament\Actions\ActionGroup;
 use Filament\Actions\BulkActionGroup;
-use Filament\Actions\CreateAction;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
@@ -42,7 +41,6 @@ use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Spatie\Permission\Models\Role;
 use Webkul\Security\Enums\PermissionType;
-use Webkul\Security\Filament\Resources\UserResource\Pages\CreateUser;
 use Webkul\Security\Filament\Resources\UserResource\Pages\EditUser;
 use Webkul\Security\Filament\Resources\UserResource\Pages\ListUsers;
 use Webkul\Security\Filament\Resources\UserResource\Pages\ViewUsers;
@@ -442,16 +440,7 @@ class UserResource extends Resource
                 $query->with('roles', 'teams', 'defaultCompany', 'allowedCompanies');
             })
             ->checkIfRecordIsSelectableUsing(fn (User $record) => self::canDeleteUser($record))
-            ->emptyStateActions([
-                CreateAction::make()
-                    ->icon('heroicon-o-plus-circle')
-                    ->successNotification(
-                        Notification::make()
-                            ->success()
-                            ->title(__('security::filament/resources/user.table.empty-state-actions.create.notification.title'))
-                            ->body(__('security::filament/resources/user.table.empty-state-actions.create.notification.body')),
-                    ),
-            ]);
+            ->emptyStateActions([]);
     }
 
     public static function infolist(Schema $schema): Schema
@@ -623,10 +612,9 @@ class UserResource extends Resource
     public static function getPages(): array
     {
         return [
-            'index'  => ListUsers::route('/'),
-            'create' => CreateUser::route('/create'),
-            'edit'   => EditUser::route('/{record}/edit'),
-            'view'   => ViewUsers::route('/{record}'),
+            'index' => ListUsers::route('/'),
+            'edit'  => EditUser::route('/{record}/edit'),
+            'view'  => ViewUsers::route('/{record}'),
         ];
     }
 }
