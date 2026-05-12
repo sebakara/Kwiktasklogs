@@ -1,7 +1,12 @@
 <?php
 
 return [
-    'body'           => 'You have been invited to join :app </br></br>To start the onboarding process - click on the button below and start the process:',
+    'greeting'       => 'Dear :name,',
+    'welcome'        => 'Welcome to the team!',
+    'invitation'     => 'You have been invited to join :app. To begin your onboarding process and access our work hub, please click the link below:',
     'create-account' => 'Start Onboarding',
-    'discard-email'  => 'If you did not expect to receive an invitation to this team, you may discard this email.',
+    'portal-info'    => 'Through the portal, you will be able to complete your onboarding steps, access company resources, and get set up for your role.',
+    'discard-email'  => 'If you were not expecting this invitation, please disregard this email.',
+    'closing'        => 'We look forward to having you onboard and wish you a great start with us.',
+    'signature'      => "Best regards,\n\nThe HR Team\n\n:company",
 ];

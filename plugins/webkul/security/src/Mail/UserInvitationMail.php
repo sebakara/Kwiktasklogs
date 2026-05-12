@@ -17,12 +17,18 @@ class UserInvitationMail extends Mailable
 
     private Invitation $invitation;
 
+    private string $recipientName;
+
+    private string $companyName;
+
     /**
      * Create a new message instance.
      */
-    public function __construct(Invitation $invitation)
+    public function __construct(Invitation $invitation, ?string $recipientName = null, ?string $companyName = null)
     {
         $this->invitation = $invitation;
+        $this->recipientName = $recipientName ?: $invitation->email;
+        $this->companyName = $companyName ?: (string) config('app.name');
     }
 
     /**
@@ -45,10 +51,12 @@ class UserInvitationMail extends Mailable
         return new Content(
             markdown: 'security::emails.user-invitation',
             with: [
-                'acceptUrl' => URL::signedRoute(
+                'acceptUrl'     => URL::signedRoute(
                     'security.invitation.accept',
                     ['invitation' => $this->invitation]
                 ),
+                'recipientName' => $this->recipientName,
+                'companyName'   => $this->companyName,
             ]
         );
     }

@@ -6834,23 +6834,23 @@ SET @OLD_AUTOCOMMIT=@@AUTOCOMMIT, @@AUTOCOMMIT=0;
 LOCK TABLES `plugins` WRITE;
 /*!40000 ALTER TABLE `plugins` DISABLE KEYS */;
 INSERT INTO `plugins` VALUES
-(1,'accounting','Aureus ERP','','',NULL,NULL,1,1,NULL,'2026-04-23 20:44:25','2026-04-24 05:29:40'),
-(2,'accounts','Aureus ERP','','',NULL,NULL,1,1,NULL,'2026-04-23 20:44:25','2026-04-24 05:30:13'),
-(3,'blogs','Aureus ERP','Manage blogs','Manage blogs',NULL,NULL,1,1,NULL,'2026-04-23 20:44:25','2026-04-24 05:35:31'),
-(4,'contacts','Aureus ERP','Contact management for customers and vendors','Contact management for customers and vendors',NULL,NULL,1,1,NULL,'2026-04-23 20:44:25','2026-04-24 05:28:48'),
-(5,'employees','Aureus ERP','Employees management','Employees management',NULL,NULL,1,1,NULL,'2026-04-23 20:44:25','2026-04-24 05:31:45'),
+(1,'accounting','KwikERP','','',NULL,NULL,1,1,NULL,'2026-04-23 20:44:25','2026-04-24 05:29:40'),
+(2,'accounts','KwikERP','','',NULL,NULL,1,1,NULL,'2026-04-23 20:44:25','2026-04-24 05:30:13'),
+(3,'blogs','KwikERP','Manage blogs','Manage blogs',NULL,NULL,1,1,NULL,'2026-04-23 20:44:25','2026-04-24 05:35:31'),
+(4,'contacts','KwikERP','Contact management for customers and vendors','Contact management for customers and vendors',NULL,NULL,1,1,NULL,'2026-04-23 20:44:25','2026-04-24 05:28:48'),
+(5,'employees','KwikERP','Employees management','Employees management',NULL,NULL,1,1,NULL,'2026-04-23 20:44:25','2026-04-24 05:31:45'),
 (6,'inventories','Jitendra Singh','Inventory and warehouse management','Inventory and warehouse management','1.0.0','MIT',1,0,6,'2026-04-23 20:44:25','2026-04-23 20:44:25'),
-(7,'invoices','Aureus ERP','Invoice generation and management','Invoice generation and management',NULL,NULL,1,1,NULL,'2026-04-23 20:44:25','2026-04-24 05:30:27'),
-(8,'payments','Aureus ERP','','','1.0.0','MIT',1,0,8,'2026-04-23 20:44:25','2026-04-23 20:44:25'),
-(9,'products','Aureus ERP','','',NULL,NULL,1,1,NULL,'2026-04-23 20:44:25','2026-04-24 05:30:08'),
-(10,'projects','Aureus ERP','Project planning and management','Project planning and management',NULL,NULL,1,1,NULL,'2026-04-23 20:44:25','2026-04-24 05:28:17'),
-(11,'purchases','Aureus ERP','Procurement and purchase order management','Procurement and purchase order management','1.0.0','MIT',1,0,11,'2026-04-23 20:44:25','2026-04-23 20:44:25'),
-(12,'recruitments','Aureus ERP','Applicant tracking and hiring','Applicant tracking and hiring',NULL,NULL,1,1,NULL,'2026-04-23 20:44:25','2026-04-24 05:31:56'),
-(13,'sales','Aureus ERP','Sales pipeline and opportunity management','Sales pipeline and opportunity management','1.0.0','MIT',1,0,13,'2026-04-23 20:44:25','2026-04-23 20:44:25'),
-(14,'time-off','Aureus ERP','Leave management and tracking','Leave management and tracking',NULL,NULL,1,1,NULL,'2026-04-23 20:44:25','2026-04-24 05:31:04'),
-(15,'timesheets','Aureus ERP','Employee work hour tracking','Employee work hour tracking',NULL,NULL,1,1,NULL,'2026-04-23 20:44:25','2026-04-24 05:28:19'),
-(16,'website','Aureus ERP','Website for customer','Website for customer',NULL,NULL,1,1,NULL,'2026-04-23 20:44:25','2026-04-24 05:35:29'),
-(17,'documentation','Aureus ERP','In-app documentation and help center','In-app documentation and help center',NULL,NULL,1,1,14,'2026-05-07 11:14:57','2026-05-07 11:14:57');
+(7,'invoices','KwikERP','Invoice generation and management','Invoice generation and management',NULL,NULL,1,1,NULL,'2026-04-23 20:44:25','2026-04-24 05:30:27'),
+(8,'payments','KwikERP','','','1.0.0','MIT',1,0,8,'2026-04-23 20:44:25','2026-04-23 20:44:25'),
+(9,'products','KwikERP','','',NULL,NULL,1,1,NULL,'2026-04-23 20:44:25','2026-04-24 05:30:08'),
+(10,'projects','KwikERP','Project planning and management','Project planning and management',NULL,NULL,1,1,NULL,'2026-04-23 20:44:25','2026-04-24 05:28:17'),
+(11,'purchases','KwikERP','Procurement and purchase order management','Procurement and purchase order management','1.0.0','MIT',1,0,11,'2026-04-23 20:44:25','2026-04-23 20:44:25'),
+(12,'recruitments','KwikERP','Applicant tracking and hiring','Applicant tracking and hiring',NULL,NULL,1,1,NULL,'2026-04-23 20:44:25','2026-04-24 05:31:56'),
+(13,'sales','KwikERP','Sales pipeline and opportunity management','Sales pipeline and opportunity management','1.0.0','MIT',1,0,13,'2026-04-23 20:44:25','2026-04-23 20:44:25'),
+(14,'time-off','KwikERP','Leave management and tracking','Leave management and tracking',NULL,NULL,1,1,NULL,'2026-04-23 20:44:25','2026-04-24 05:31:04'),
+(15,'timesheets','KwikERP','Employee work hour tracking','Employee work hour tracking',NULL,NULL,1,1,NULL,'2026-04-23 20:44:25','2026-04-24 05:28:19'),
+(16,'website','KwikERP','Website for customer','Website for customer',NULL,NULL,1,1,NULL,'2026-04-23 20:44:25','2026-04-24 05:35:29'),
+(17,'documentation','KwikERP','In-app documentation and help center','In-app documentation and help center',NULL,NULL,1,1,14,'2026-05-07 11:14:57','2026-05-07 11:14:57');
 /*!40000 ALTER TABLE `plugins` ENABLE KEYS */;
 UNLOCK TABLES;
 COMMIT;

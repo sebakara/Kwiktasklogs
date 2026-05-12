@@ -25,26 +25,7 @@ class DocumentationArticlePolicy
 
     public function viewAny(User $user): bool
     {
-        if ($user->can('view_any_documentation_article')) {
-            return true;
-        }
-
-        if (Project::query()->where('documentation_assignee_id', $user->id)->exists()
-            || DocumentationArticle::query()->where('assignee_id', $user->id)->exists()) {
-            return true;
-        }
-
-        $projectId = (int) (request()->query('project') ?: request()->query('project_id'));
-
-        if ($projectId > 0) {
-            $project = Project::query()->find($projectId);
-
-            if ($project && $user->can('view', $project)) {
-                return true;
-            }
-        }
-
-        return false;
+        return true;
     }
 
     public function view(User $user, DocumentationArticle $documentationArticle): bool
@@ -57,7 +38,15 @@ class DocumentationArticlePolicy
             return true;
         }
 
-        return $this->userIsProjectDocumentationLead($user, $documentationArticle->project_id);
+        if ($this->userIsProjectDocumentationLead($user, $documentationArticle->project_id)) {
+            return true;
+        }
+
+        /*
+         * Anyone authenticated can read PUBLISHED articles. Drafts are restricted to
+         * privileged users (handled by the branches above).
+         */
+        return (bool) $documentationArticle->is_published;
     }
 
     public function create(User $user): bool
