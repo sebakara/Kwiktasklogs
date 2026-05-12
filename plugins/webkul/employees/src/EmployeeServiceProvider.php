@@ -3,7 +3,9 @@
 namespace Webkul\Employee;
 
 use Filament\Panel;
+use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Gate;
+use Webkul\Employee\Models\EmployeeDocument;
 use Webkul\Employee\Models\EmployeeReview;
 use Webkul\Employee\Policies\EmployeeReviewPolicy;
 use Webkul\PluginManager\Console\Commands\InstallCommand;
@@ -60,6 +62,10 @@ class EmployeeServiceProvider extends PackageServiceProvider
     public function packageBooted(): void
     {
         Gate::policy(EmployeeReview::class, EmployeeReviewPolicy::class);
+
+        foreach ([EmployeeDocument::ORIGINAL_STORAGE_DIRECTORY, EmployeeDocument::SIGNED_STORAGE_DIRECTORY] as $directory) {
+            File::ensureDirectoryExists(public_path($directory));
+        }
     }
 
     public function packageRegistered(): void

@@ -59,6 +59,11 @@ class DocumentationArticleResource extends Resource
             return $query;
         }
 
+        /*
+         * Privileged readers (admin / resource permission holder, project documentation
+         * lead, or the article assignee) see every article including drafts. Everyone
+         * else only sees published articles.
+         */
         if ($user->can('view_any_documentation_article')) {
             return $query;
         }
@@ -68,25 +73,15 @@ class DocumentationArticleResource extends Resource
             ->pluck('id');
 
         return $query->where(function (Builder $builder) use ($user, $leadProjectIds): void {
-            $builder->whereIn('project_id', $leadProjectIds)
+            $builder->where('is_published', true)
+                ->orWhereIn('project_id', $leadProjectIds)
                 ->orWhere('assignee_id', $user->id);
         });
     }
 
     public static function shouldRegisterNavigation(): bool
     {
-        $user = Auth::user();
-
-        if (! $user) {
-            return false;
-        }
-
-        if ($user->can('view_any_documentation_article')) {
-            return true;
-        }
-
-        return Project::query()->where('documentation_assignee_id', $user->id)->exists()
-            || DocumentationArticle::query()->where('assignee_id', $user->id)->exists();
+        return Auth::check();
     }
 
     public static function getNavigationLabel(): string

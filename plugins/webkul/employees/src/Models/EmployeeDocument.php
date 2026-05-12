@@ -10,6 +10,10 @@ use Webkul\Security\Models\User;
 
 class EmployeeDocument extends Model
 {
+    public const ORIGINAL_STORAGE_DIRECTORY = 'employees/documents/original';
+
+    public const SIGNED_STORAGE_DIRECTORY = 'employees/documents/signed';
+
     protected $table = 'employees_employee_documents';
 
     protected $fillable = [

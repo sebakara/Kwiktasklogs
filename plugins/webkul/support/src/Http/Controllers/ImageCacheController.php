@@ -20,7 +20,7 @@ class ImageCacheController
      *
      * @var string
      */
-    const AUREUS_LOGO = 'https://updates.aureuserp.com/aureus.png';
+    const KWIKERP_LOGO = 'images/logo.svg';
 
     /**
      * Get HTTP response of template applied image file
@@ -31,8 +31,14 @@ class ImageCacheController
     public function getImage($filename)
     {
         try {
-            $content = Cache::remember('aureus-logo', 10080, function () {
-                return base64_encode($this->getImageFromUrl(self::AUREUS_LOGO));
+            $content = Cache::remember('kwikerp-logo', 10080, function () {
+                $logoPath = public_path(self::KWIKERP_LOGO);
+
+                if (! is_file($logoPath)) {
+                    return '';
+                }
+
+                return base64_encode((string) file_get_contents($logoPath));
             });
         } catch (Exception $e) {
             $content = '';

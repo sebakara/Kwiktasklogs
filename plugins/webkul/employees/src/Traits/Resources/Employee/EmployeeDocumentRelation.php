@@ -34,6 +34,7 @@ use Illuminate\Support\Str;
 use InvalidArgumentException;
 use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
 use Webkul\Employee\Enums\EmployeeDocumentStatus;
+use Webkul\Employee\Models\EmployeeDocument;
 use Webkul\Employee\Services\EmployeeSignedDocumentPdfService;
 
 trait EmployeeDocumentRelation
@@ -56,7 +57,7 @@ trait EmployeeDocumentRelation
                         ->label('Document file')
                         ->required()
                         ->disk('public_root')
-                        ->directory('employees/documents/original')
+                        ->directory(EmployeeDocument::ORIGINAL_STORAGE_DIRECTORY)
                         ->visibility('public')
                         ->getUploadedFileNameForStorageUsing(function (TemporaryUploadedFile $file): string {
                             $baseName = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
@@ -235,7 +236,7 @@ trait EmployeeDocumentRelation
 
                         $titleSlug = Str::slug((string) $record->title) ?: 'employee-document';
                         $filename = $titleSlug.'-record-'.$record->id.'-signed-'.$signedAt->format('YmdHis').'.pdf';
-                        $signedFilePath = 'employees/documents/signed/'.$filename;
+                        $signedFilePath = EmployeeDocument::SIGNED_STORAGE_DIRECTORY.'/'.$filename;
                         $tempSignedBase = tempnam(sys_get_temp_dir(), 'employee-signed-');
 
                         if ($tempSignedBase === false) {

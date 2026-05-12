@@ -210,7 +210,7 @@
 * #510 [fixed] - Image Name and Size Displayed on Frontend in Website Content Page.
 * #458 [fixed] - Preceding Subtotal Field Accepts Invalid String Input in Tax Group Creation.
 * #454 [fixed] - First word must be capital.
-* #247 [fixed] - After the Fresh Installation of Aureus ERP, we can see the Dashboard is appearing. It should open up with Roles Section.
+* #247 [fixed] - After the Fresh Installation of KwikERP, we can see the Dashboard is appearing. It should open up with Roles Section.
 * #171 [fixed] - Quantity Delivered and Quantity Invoiced Should Be Non-Editable After Quotation Confirmation.
 * Fixed plugin discovery to show both installed and uninstalled plugins correctly.
 * Fixed undefined variable error in plugin migration rollback process.
@@ -263,7 +263,7 @@
 * #856 [fixed] - fixed namespace issue in ci/cd.
 * #853 [fixed] - filament version upgrade 4.1.
 * #835 [fixed] - Add “Open Product” action in product repeater items.
-* #828 [fixed] - Update APP_NAME from AureusERP to YourERP.
+* #828 [fixed] - Update APP_NAME from KwikERP to YourERP.
 * #822 [fixed] - Reorderable Columns.
 * #812 [fixed] - fixed unique name issue.
 * #813 [fixed] - Improve Page Navigation Layout for Clustered and Record Views.

@@ -1,5 +1,5 @@
 {
-    "name": "aureuserp/aureuserp",
+    "name": "kwikerp/kwikerp",
     "type": "project",
     "description": "Open Source ERP Solution built on Laravel for Small and Medium Enterprises (SMEs) and large-scale enterprises.",
     "keywords": [
@@ -100,9 +100,9 @@
     "minimum-stability": "stable",
     "prefer-stable": true,
     "support": {
-        "issues": "https://github.com/aureuserp/aureuserp/issues",
-        "forum": "https://forums.aureuserp.com",
-        "source": "https://github.com/aureuserp/aureuserp",
-        "docs": "https://devdocs.aureuserp.com"
+        "issues": "https://github.com/kwikerp/kwikerp/issues",
+        "forum": "https://forums.kwikerp.com",
+        "source": "https://github.com/kwikerp/kwikerp",
+        "docs": "https://devdocs.kwikerp.com"
     }
 }

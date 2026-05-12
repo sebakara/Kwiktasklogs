@@ -8,4 +8,4 @@ module.exports = {
         './resources/views/**/*.blade.php',
         './src/**/*.php',
     ],
-}
+};

@@ -29,7 +29,7 @@ class ProjectTestingSeeder extends Seeder
         ];
 
         $projectNames = [
-            'Aureus ERP Core Platform',
+            'KwikERP Core Platform',
             'Customer Self-Service Portal',
             'Mobile Field Sales App',
             'HR & Payroll Automation',

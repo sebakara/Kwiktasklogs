@@ -504,7 +504,13 @@ class Employee extends Model
             'email' => $user->email,
         ]);
 
-        Mail::to($invitation->email)->send(new UserInvitationMail($invitation));
+        $companyName = $this->company?->name ?: (string) config('app.name');
+
+        Mail::to($invitation->email)->send(new UserInvitationMail(
+            $invitation,
+            recipientName: $this->name ?: $user->name,
+            companyName: $companyName,
+        ));
     }
 
     private function findExistingUserByPreferredEmails(): ?User
