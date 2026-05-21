@@ -7,7 +7,8 @@ use Filament\Actions\DeleteAction;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\EditRecord;
 use Webkul\Chatter\Filament\Actions\ChatterAction;
-use Webkul\Documentation\Filament\Resources\DocumentationArticleResource;
+use Webkul\Documentation\Services\DocumentationProjectPortalLink;
+use Webkul\PluginManager\Package;
 use Webkul\Project\Filament\Resources\ProjectResource;
 use Webkul\Support\Models\ActivityPlan;
 
@@ -35,9 +36,8 @@ class EditProject extends EditRecord
                 ->label('Project Docs')
                 ->icon('heroicon-o-book-open')
                 ->color('info')
-                ->url(fn (): string => DocumentationArticleResource::getUrl('index', [
-                    'project' => $this->record->getKey(),
-                ])),
+                ->visible(fn (): bool => Package::isPluginInstalled('documentation'))
+                ->url(fn (): string => DocumentationProjectPortalLink::urlForProject((int) $this->record->getKey())),
             ChatterAction::make()
                 ->setResource(static::$resource)
                 ->setActivityPlans($this->getActivityPlans()),

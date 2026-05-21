@@ -8,7 +8,7 @@ use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Webkul\Documentation\Filament\Resources\DocumentationArticleResource;
 use Webkul\Documentation\Models\DocumentationArticle;
-use Webkul\Project\Models\Project;
+use Webkul\Documentation\Services\DocumentationProjectIntegration;
 
 class CreateDocumentationArticle extends CreateRecord
 {
@@ -26,7 +26,7 @@ class CreateDocumentationArticle extends CreateRecord
 
         $projectId = (int) ($data['project_id'] ?? 0);
         if ($projectId) {
-            $documentationAssigneeId = Project::query()->whereKey($projectId)->value('documentation_assignee_id');
+            $documentationAssigneeId = DocumentationProjectIntegration::documentationAssigneeIdForProject($projectId);
             if ($documentationAssigneeId) {
                 $data['creator_id'] = (int) $documentationAssigneeId;
             }
@@ -64,7 +64,7 @@ class CreateDocumentationArticle extends CreateRecord
             return;
         }
 
-        if ($projectId && Project::query()->whereKey($projectId)->where('documentation_assignee_id', $user->id)->exists()) {
+        if (DocumentationProjectIntegration::isAssigneeForProject($user, $projectId ?: null)) {
             return;
         }
 

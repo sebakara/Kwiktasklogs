@@ -28,7 +28,9 @@ class StateSeeder extends Seeder
                 ];
             })->toArray();
 
-            DB::table('states')->insert($formattedStates);
+            foreach (array_chunk($formattedStates, 200) as $chunk) {
+                DB::table('states')->insert($chunk);
+            }
         }
     }
 }

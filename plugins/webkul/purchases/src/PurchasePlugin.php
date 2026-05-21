@@ -5,6 +5,7 @@ namespace Webkul\Purchase;
 use Filament\Contracts\Plugin;
 use Filament\Navigation\NavigationItem;
 use Filament\Panel;
+use Illuminate\Support\Facades\Route;
 use Webkul\PluginManager\Package;
 use Webkul\Purchase\Filament\Admin\Clusters\Settings\Pages\ManageProducts;
 
@@ -60,6 +61,10 @@ class PurchasePlugin implements Plugin
                         in: __DIR__.'/Filament/Admin/Clusters',
                         for: 'Webkul\\Purchase\\Filament\\Admin\\Clusters'
                     )
+                    ->discoverPages(
+                        in: __DIR__.'/Filament/Admin/Clusters/Settings/Pages',
+                        for: 'Webkul\\Purchase\\Filament\\Admin\\Clusters\\Settings\\Pages'
+                    )
                     ->discoverWidgets(
                         in: __DIR__.'/Filament/Admin/Widgets',
                         for: 'Webkul\\Purchase\\Filament\\Admin\\Widgets'
@@ -67,10 +72,17 @@ class PurchasePlugin implements Plugin
                     ->navigationItems([
                         NavigationItem::make('settings')
                             ->label(fn () => __('purchases::app.navigation.settings.label'))
-                            ->url(fn () => ManageProducts::getUrl())
+                            ->url(function (): string {
+                                $routeName = ManageProducts::getRouteName();
+
+                                return Route::has($routeName)
+                                    ? route($routeName)
+                                    : '#';
+                            })
                             ->group('Purchase')
                             ->sort(4)
-                            ->visible(fn () => ManageProducts::canAccess()),
+                            ->visible(fn (): bool => Route::has(ManageProducts::getRouteName())
+                                && ManageProducts::canAccess()),
                     ]);
             });
     }

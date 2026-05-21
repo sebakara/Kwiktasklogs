@@ -12,6 +12,7 @@ use Spatie\Permission\Models\Role;
 use Throwable;
 use Webkul\PluginManager\Models\Plugin;
 use Webkul\PluginManager\Package;
+use Webkul\PluginManager\Support\ShellCommand;
 
 class InstallCommand extends Command
 {
@@ -432,13 +433,17 @@ class InstallCommand extends Command
         try {
             $phpPath = $this->getPhpExecutablePath();
 
-            $php = escapeshellarg($phpPath);
+            $php = ShellCommand::phpExecutable($phpPath);
 
             $artisan = escapeshellarg(base_path('artisan'));
 
-            $cmd = $this->buildTimeoutCommand(60, "$php $artisan shield:generate --all --option=permissions --panel=admin 2>&1");
+            $result = ShellCommand::run(
+                "$php $artisan shield:generate --all --option=permissions --panel=admin 2>&1",
+                60,
+            );
 
-            exec($cmd, $output, $exitCode);
+            $output = $result['output'] !== '' ? explode(PHP_EOL, $result['output']) : [];
+            $exitCode = $result['exit_code'];
 
             if ($exitCode === 124) {
                 throw new RuntimeException('Permission generation timed out after 60 seconds.');
@@ -503,14 +508,5 @@ class InstallCommand extends Command
         }
 
         return 'php';
-    }
-
-    protected function buildTimeoutCommand(int $seconds, string $command): string
-    {
-        if (PHP_OS_FAMILY === 'Windows') {
-            return $command;
-        }
-
-        return "timeout {$seconds} {$command}";
     }
 }

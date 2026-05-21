@@ -31,7 +31,9 @@ class CountrySeeder extends Seeder
                 ];
             })->toArray();
 
-            DB::table('countries')->insert($formattedCountries);
+            foreach (array_chunk($formattedCountries, 100) as $chunk) {
+                DB::table('countries')->insert($chunk);
+            }
         }
     }
 }

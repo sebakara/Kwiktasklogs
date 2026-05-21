@@ -8,6 +8,7 @@ use Filament\Pages\SettingsPage;
 use Filament\Schemas\Schema;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\HtmlString;
+use Webkul\PluginManager\Package;
 use Webkul\Purchase\Filament\Admin\Clusters\Configurations\Resources\PackagingResource;
 use Webkul\Purchase\Settings\ProductSettings;
 use Webkul\Support\Filament\Clusters\Settings;
@@ -31,6 +32,24 @@ class ManageProducts extends SettingsPage
     protected static function getPagePermission(): ?string
     {
         return 'page_purchase_manage_products';
+    }
+
+    public static function shouldRegisterNavigation(): bool
+    {
+        if (! Package::isPluginInstalled('purchases')) {
+            return false;
+        }
+
+        return parent::shouldRegisterNavigation();
+    }
+
+    public static function canAccess(): bool
+    {
+        if (! Package::isPluginInstalled('purchases')) {
+            return false;
+        }
+
+        return parent::canAccess();
     }
 
     public function getBreadcrumbs(): array

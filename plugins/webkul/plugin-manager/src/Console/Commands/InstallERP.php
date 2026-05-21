@@ -203,10 +203,15 @@ class InstallERP extends Command
     {
         $this->info('🛡 Generating roles and permissions...');
 
-        $adminRole = Role::firstOrCreate([
-            'name'       => $this->getAdminRoleName(),
-            'is_default' => true,
-        ]);
+        $adminRole = Role::firstOrCreate(
+            [
+                'name'       => $this->getAdminRoleName(),
+                'guard_name' => 'web',
+            ],
+            [
+                'is_default' => true,
+            ],
+        );
 
         Artisan::call('shield:generate', [
             '--all'    => true,
@@ -214,7 +219,10 @@ class InstallERP extends Command
             '--panel'  => 'admin',
         ], $this->getOutput());
 
-        $permissions = Permission::all();
+        $permissions = Permission::query()
+            ->where('guard_name', $adminRole->guard_name)
+            ->get();
+
         $adminRole->syncPermissions($permissions);
 
         $this->info('✅ Roles and permissions generated and assigned successfully.');
@@ -253,7 +261,7 @@ class InstallERP extends Command
 
         $this->syncDefaultSettings($adminUser);
 
-        $this->info("✅ Admin user '{$adminUser->name}' created and assigned the '{$this->getAdminRoleName()}' role successfully.");
+        $this->info("✅ Admin user '{$adminUser->name}' configured and assigned the '{$this->getAdminRoleName()}' role successfully.");
     }
 
     /**
@@ -281,7 +289,7 @@ class InstallERP extends Command
                 validate: fn ($email) => $this->validateAdminEmail($email, $userModel)
             );
         } else {
-            $emailValidation = $this->validateAdminEmail($email, $userModel);
+            $emailValidation = $this->validateAdminEmail($email, $userModel, allowExisting: true);
 
             if ($emailValidation) {
                 $this->error("Invalid email: {$emailValidation}");
@@ -326,13 +334,13 @@ class InstallERP extends Command
     /**
      * Validate the provided admin email.
      */
-    protected function validateAdminEmail(string $email, Model $userModel): ?string
+    protected function validateAdminEmail(string $email, Model $userModel, bool $allowExisting = false): ?string
     {
         if (! filter_var($email, FILTER_VALIDATE_EMAIL)) {
             return 'The email address must be valid.';
         }
 
-        if ($userModel::where('email', $email)->exists()) {
+        if (! $allowExisting && $userModel::where('email', $email)->exists()) {
             return 'A user with this email address already exists.';
         }
 

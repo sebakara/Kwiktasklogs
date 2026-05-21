@@ -19,20 +19,21 @@ class ProjectRequest extends FormRequest
         $requiredRule = $isUpdate ? ['sometimes', 'required'] : ['required'];
 
         return [
-            'name'             => [...$requiredRule, 'string', 'max:255'],
-            'description'      => ['nullable', 'string'],
-            'visibility'       => [...$requiredRule, 'string', Rule::enum(ProjectVisibility::class)],
-            'stage_id'         => [...$requiredRule, 'integer', 'exists:projects_project_stages,id'],
-            'user_id'          => ['nullable', 'integer', 'exists:users,id'],
-            'partner_id'       => ['nullable', 'integer', 'exists:partners_partners,id'],
-            'company_id'       => ['nullable', 'integer', 'exists:companies,id'],
-            'start_date'       => ['nullable', 'date', 'required_with:end_date', 'before_or_equal:end_date'],
-            'end_date'         => ['nullable', 'date', 'required_with:start_date', 'after_or_equal:start_date'],
-            'allocated_hours'  => ['nullable', 'numeric', 'min:0'],
-            'allow_timesheets' => ['nullable', 'boolean'],
-            'allow_milestones' => ['nullable', 'boolean'],
-            'tags'             => ['nullable', 'array'],
-            'tags.*'           => ['integer', 'exists:projects_tags,id'],
+            'name'                      => [...$requiredRule, 'string', 'max:255'],
+            'description'               => ['nullable', 'string'],
+            'visibility'                => [...$requiredRule, 'string', Rule::enum(ProjectVisibility::class)],
+            'stage_id'                  => [...$requiredRule, 'integer', 'exists:projects_project_stages,id'],
+            'user_id'                   => ['nullable', 'integer', 'exists:users,id'],
+            'documentation_assignee_id' => ['nullable', 'integer', 'exists:users,id'],
+            'partner_id'                => ['nullable', 'integer', 'exists:partners_partners,id'],
+            'company_id'                => ['nullable', 'integer', 'exists:companies,id'],
+            'start_date'                => ['nullable', 'date', 'required_with:end_date', 'before_or_equal:end_date'],
+            'end_date'                  => ['nullable', 'date', 'required_with:start_date', 'after_or_equal:start_date'],
+            'allocated_hours'           => ['nullable', 'numeric', 'min:0'],
+            'allow_timesheets'          => ['nullable', 'boolean'],
+            'allow_milestones'          => ['nullable', 'boolean'],
+            'tags'                      => ['nullable', 'array'],
+            'tags.*'                    => ['integer', 'exists:projects_tags,id'],
         ];
     }
 
@@ -58,6 +59,10 @@ class ProjectRequest extends FormRequest
             'user_id' => [
                 'description' => 'Project manager user ID.',
                 'example'     => 1,
+            ],
+            'documentation_assignee_id' => [
+                'description' => 'Documentation assignee user ID.',
+                'example'     => 2,
             ],
             'partner_id' => [
                 'description' => 'Customer ID.',

@@ -4,6 +4,7 @@ namespace Webkul\Employee\Database\Seeders;
 
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Webkul\Security\Models\User;
 
 class ActivityPlanTemplateSeeder extends Seeder
@@ -13,6 +14,17 @@ class ActivityPlanTemplateSeeder extends Seeder
      */
     public function run(): void
     {
+        if (
+            ! Schema::hasTable('activity_plans')
+            || ! Schema::hasTable('activity_types')
+            || DB::table('activity_plans')->whereIn('id', [1, 2])->count() < 2
+            || ! DB::table('activity_types')->where('id', 3)->exists()
+        ) {
+            $this->command?->warn('Skipping activity plan templates: run support seeders (activity plans/types) first.');
+
+            return;
+        }
+
         DB::table('activity_plan_templates')->delete();
 
         $user = User::first();

@@ -27,5 +27,13 @@ class AppServiceProvider extends ServiceProvider
         if (app()->environment('production')) {
             URL::forceScheme('https');
         }
+
+        if (! $this->app->runningInConsole() && $this->app->has('request')) {
+            $request = $this->app->make('request');
+
+            if ($request->server('HTTP_HOST')) {
+                URL::forceRootUrl($request->root());
+            }
+        }
     }
 }

@@ -4,6 +4,7 @@ namespace Webkul\Project\Database\Seeders;
 
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Schema;
 use Webkul\Employee\Models\Department;
 use Webkul\Employee\Models\Employee;
 use Webkul\Employee\Models\EmployeeJobPosition;
@@ -166,6 +167,12 @@ class ProjectTestingSeeder extends Seeder
      */
     protected function seedCompanyStructure(): Collection
     {
+        if (! Schema::hasTable('employees_departments')) {
+            $this->command?->warn('Employees module not installed. Skipping developer assignment seeding.');
+
+            return collect();
+        }
+
         $creator = User::query()->first();
         $company = Company::query()->first();
 

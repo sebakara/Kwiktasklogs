@@ -4,7 +4,7 @@ namespace Webkul\Documentation\Policies;
 
 use Illuminate\Auth\Access\HandlesAuthorization;
 use Webkul\Documentation\Models\DocumentationArticle;
-use Webkul\Project\Models\Project;
+use Webkul\Documentation\Services\DocumentationProjectIntegration;
 use Webkul\Security\Models\User;
 
 class DocumentationArticlePolicy
@@ -13,14 +13,7 @@ class DocumentationArticlePolicy
 
     protected function userIsProjectDocumentationLead(User $user, ?int $projectId): bool
     {
-        if (! $projectId) {
-            return false;
-        }
-
-        return Project::query()
-            ->whereKey($projectId)
-            ->where('documentation_assignee_id', $user->id)
-            ->exists();
+        return DocumentationProjectIntegration::isAssigneeForProject($user, $projectId);
     }
 
     public function viewAny(User $user): bool
@@ -55,7 +48,7 @@ class DocumentationArticlePolicy
             return true;
         }
 
-        return Project::query()->where('documentation_assignee_id', $user->id)->exists();
+        return DocumentationProjectIntegration::assigneeHasAnyProject($user);
     }
 
     public function update(User $user, DocumentationArticle $documentationArticle): bool
@@ -97,7 +90,7 @@ class DocumentationArticlePolicy
     public function forceDeleteAny(User $user): bool
     {
         return $user->can('force_delete_any_documentation_article')
-            || Project::query()->where('documentation_assignee_id', $user->id)->exists();
+            || DocumentationProjectIntegration::assigneeHasAnyProject($user);
     }
 
     public function restore(User $user, DocumentationArticle $documentationArticle): bool
@@ -112,7 +105,7 @@ class DocumentationArticlePolicy
     public function restoreAny(User $user): bool
     {
         return $user->can('restore_any_documentation_article')
-            || Project::query()->where('documentation_assignee_id', $user->id)->exists();
+            || DocumentationProjectIntegration::assigneeHasAnyProject($user);
     }
 
     public function reorder(User $user): bool

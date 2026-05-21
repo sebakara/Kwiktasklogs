@@ -18,6 +18,7 @@
     "autoload": {
         "psr-4": {
             "Webkul\\Documentation\\": "src/",
+            "Webkul\\Documentation\\Database\\Factories\\": "database/factories/",
             "Webkul\\Documentation\\Database\\Seeders\\": "database/seeders/"
         }
     },

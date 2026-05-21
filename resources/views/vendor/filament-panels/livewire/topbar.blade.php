@@ -55,6 +55,11 @@
                                 $groupLabel = $group->getLabel();
                                 $groupIcon = $group->getIcon();
                                 $itemUrl = $group->getItems()->first()?->getUrl();
+
+                                if ($groupLabel === __('admin.navigation.documentation')
+                                    && class_exists(\Webkul\Documentation\Filament\Pages\HubDashboard::class)) {
+                                    $itemUrl = \Webkul\Documentation\Filament\Pages\HubDashboard::getUrl();
+                                }
                             @endphp
 
                             @if (! $groupLabel || ! $itemUrl || ! $groupIcon)

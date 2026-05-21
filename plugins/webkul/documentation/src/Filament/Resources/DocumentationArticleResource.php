@@ -29,6 +29,7 @@ use Webkul\Documentation\Filament\Resources\DocumentationArticleResource\Pages\E
 use Webkul\Documentation\Filament\Resources\DocumentationArticleResource\Pages\ListDocumentationArticles;
 use Webkul\Documentation\Filament\Resources\DocumentationArticleResource\Pages\ViewDocumentationArticle;
 use Webkul\Documentation\Models\DocumentationArticle;
+use Webkul\Documentation\Services\DocumentationProjectIntegration;
 use Webkul\Project\Models\Project;
 use Webkul\Security\Models\User;
 
@@ -68,9 +69,7 @@ class DocumentationArticleResource extends Resource
             return $query;
         }
 
-        $leadProjectIds = Project::query()
-            ->where('documentation_assignee_id', $user->id)
-            ->pluck('id');
+        $leadProjectIds = DocumentationProjectIntegration::projectIdsForAssignee($user);
 
         return $query->where(function (Builder $builder) use ($user, $leadProjectIds): void {
             $builder->where('is_published', true)
@@ -81,7 +80,7 @@ class DocumentationArticleResource extends Resource
 
     public static function shouldRegisterNavigation(): bool
     {
-        return Auth::check();
+        return false;
     }
 
     public static function getNavigationLabel(): string
@@ -91,7 +90,7 @@ class DocumentationArticleResource extends Resource
 
     public static function getNavigationGroup(): ?string
     {
-        return __('documentation::filament/resources/documentation-article.navigation.group');
+        return __('admin.navigation.documentation');
     }
 
     public static function form(Schema $schema): Schema
@@ -124,7 +123,7 @@ class DocumentationArticleResource extends Resource
                             ->options(function (): array {
                                 $user = Auth::user();
 
-                                if (! $user) {
+                                if (! $user || ! DocumentationProjectIntegration::isAvailable()) {
                                     return [];
                                 }
 

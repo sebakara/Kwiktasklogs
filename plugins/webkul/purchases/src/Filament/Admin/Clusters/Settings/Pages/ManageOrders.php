@@ -9,6 +9,7 @@ use Filament\Pages\SettingsPage;
 use Filament\Schemas\Components\Group;
 use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Schema;
+use Webkul\PluginManager\Package;
 use Webkul\Purchase\Settings\OrderSettings;
 use Webkul\Support\Filament\Clusters\Settings;
 
@@ -31,6 +32,24 @@ class ManageOrders extends SettingsPage
     protected static function getPagePermission(): ?string
     {
         return 'page_purchase_manage_orders';
+    }
+
+    public static function shouldRegisterNavigation(): bool
+    {
+        if (! Package::isPluginInstalled('purchases')) {
+            return false;
+        }
+
+        return parent::shouldRegisterNavigation();
+    }
+
+    public static function canAccess(): bool
+    {
+        if (! Package::isPluginInstalled('purchases')) {
+            return false;
+        }
+
+        return parent::canAccess();
     }
 
     public function getBreadcrumbs(): array

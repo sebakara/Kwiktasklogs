@@ -22,13 +22,15 @@ class TaxSeeder extends Seeder
 
         $taxGroup = TaxGroup::first();
 
+        $countryId = DB::table('countries')->orderBy('id')->value('id');
+
         $taxes = [
             [
                 'company_id'                       => $company?->id,
                 'sort'                             => 1,
                 'tax_group_id'                     => $taxGroup?->id,
                 'cash_basis_transition_account_id' => null,
-                'country_id'                       => 233,
+                'country_id'                       => $countryId,
                 'creator_id'                       => $user?->id,
                 'type_tax_use'                     => TypeTaxUse::SALE,
                 'tax_scope'                        => null,
@@ -52,7 +54,7 @@ class TaxSeeder extends Seeder
                 'sort'                             => 1,
                 'tax_group_id'                     => $taxGroup?->id,
                 'cash_basis_transition_account_id' => null,
-                'country_id'                       => 233,
+                'country_id'                       => $countryId,
                 'creator_id'                       => $user?->id,
                 'type_tax_use'                     => TypeTaxUse::PURCHASE,
                 'tax_scope'                        => null,

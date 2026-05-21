@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\Auth;
+use Webkul\Documentation\Services\DocumentationProjectIntegration;
 use Webkul\Project\Models\Project;
 use Webkul\Security\Models\User;
 
@@ -64,7 +65,7 @@ class DocumentationArticle extends Model
 
         $documentationAssigneeId = $this->relationLoaded('project')
             ? $this->project?->documentation_assignee_id
-            : Project::query()->whereKey($this->project_id)->value('documentation_assignee_id');
+            : DocumentationProjectIntegration::documentationAssigneeIdForProject($this->project_id);
 
         if ($documentationAssigneeId === null) {
             return false;

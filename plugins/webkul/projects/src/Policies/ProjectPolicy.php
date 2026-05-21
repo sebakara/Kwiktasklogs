@@ -3,6 +3,7 @@
 namespace Webkul\Project\Policies;
 
 use Illuminate\Auth\Access\HandlesAuthorization;
+use Illuminate\Support\Facades\Schema;
 use Webkul\Project\Models\Project;
 use Webkul\Security\Models\User;
 use Webkul\Security\Traits\HasScopedPermissions;
@@ -20,6 +21,10 @@ class ProjectPolicy
             return true;
         }
 
+        if (! Schema::hasColumn((new Project)->getTable(), 'documentation_assignee_id')) {
+            return false;
+        }
+
         return Project::query()
             ->where('documentation_assignee_id', $user->id)
             ->exists();
@@ -32,6 +37,10 @@ class ProjectPolicy
     {
         if ($user->can('view_project_project')) {
             return true;
+        }
+
+        if (! Schema::hasColumn($project->getTable(), 'documentation_assignee_id')) {
+            return false;
         }
 
         return (int) ($project->documentation_assignee_id ?? 0) === (int) $user->id;

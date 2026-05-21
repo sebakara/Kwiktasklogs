@@ -20,6 +20,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Validation\ValidationException;
 use Spatie\Permission\Traits\HasRoles;
 use Webkul\Employee\Models\Department;
@@ -221,6 +222,10 @@ class User extends BaseUser implements FilamentUser, HasAppAuthentication, HasAp
      */
     public function pushSharedUserIdentityToEmployee(): void
     {
+        if (! Schema::hasTable((new Employee)->getTable())) {
+            return;
+        }
+
         $employee = $this->employee()->first();
 
         if (! $employee instanceof Employee) {

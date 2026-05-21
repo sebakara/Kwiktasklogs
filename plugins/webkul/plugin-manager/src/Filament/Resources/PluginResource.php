@@ -32,6 +32,7 @@ use Throwable;
 use Webkul\PluginManager\Filament\Resources\PluginResource\Pages\ListPlugins;
 use Webkul\PluginManager\Models\Plugin;
 use Webkul\PluginManager\Package;
+use Webkul\PluginManager\Support\ShellCommand;
 
 class PluginResource extends Resource
 {
@@ -143,21 +144,19 @@ class PluginResource extends Resource
                             try {
                                 $phpPath = self::getPhpExecutablePath();
 
-                                $php = escapeshellarg($phpPath);
+                                $php = ShellCommand::phpExecutable($phpPath);
 
                                 $artisan = escapeshellarg(base_path('artisan'));
 
                                 $commandName = escapeshellarg("{$record->name}:install");
 
-                                $cmd = "timeout 300 $php $artisan $commandName 2>&1";
+                                $result = ShellCommand::run(
+                                    "$php $artisan $commandName 2>&1",
+                                    300,
+                                );
 
-                                $cmd = self::buildTimeoutCommand(300, "$php $artisan $commandName 2>&1");
-
-                                $output = [];
-
-                                $exitCode = 0;
-
-                                exec($cmd, $output, $exitCode);
+                                $output = $result['output'] !== '' ? explode(PHP_EOL, $result['output']) : [];
+                                $exitCode = $result['exit_code'];
 
                                 if ($exitCode === 124) {
                                     throw new RuntimeException('Installation timed out after 5 minutes.');
@@ -449,14 +448,5 @@ class PluginResource extends Resource
         }
 
         return 'php';
-    }
-
-    protected static function buildTimeoutCommand(int $seconds, string $command): string
-    {
-        if (PHP_OS_FAMILY === 'Windows') {
-            return $command;
-        }
-
-        return "timeout {$seconds} {$command}";
     }
 }

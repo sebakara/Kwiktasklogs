@@ -55,7 +55,9 @@ class SupportPlugin implements Plugin
 
                         const sidebarWrapper = document.querySelector('nav.fi-sidebar-nav');
     
-                        sidebarWrapper.scrollTo(0, activeSidebarItem.offsetTop - 250);
+                        if (activeSidebarItem && sidebarWrapper) {
+                            sidebarWrapper.scrollTo(0, activeSidebarItem.offsetTop - 250);
+                        }
                     }, 0);
                 });
             </script>

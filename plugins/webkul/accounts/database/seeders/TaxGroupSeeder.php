@@ -23,6 +23,8 @@ class TaxGroupSeeder extends Seeder
 
         $company = Company::first();
 
+        $countryId = DB::table('countries')->orderBy('id')->value('id');
+
         $now = Carbon::now();
 
         $taxGroups = [
@@ -30,7 +32,7 @@ class TaxGroupSeeder extends Seeder
                 'id'                 => 1,
                 'sort'               => 1,
                 'company_id'         => $company?->id,
-                'country_id'         => 104,
+                'country_id'         => $countryId,
                 'creator_id'         => $user?->id,
                 'name'               => 'Tax 15%',
                 'preceding_subtotal' => null,

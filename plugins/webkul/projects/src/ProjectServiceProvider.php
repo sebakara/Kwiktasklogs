@@ -7,6 +7,10 @@ use Webkul\PluginManager\Console\Commands\InstallCommand;
 use Webkul\PluginManager\Console\Commands\UninstallCommand;
 use Webkul\PluginManager\Package;
 use Webkul\PluginManager\PackageServiceProvider;
+use Webkul\Project\Models\Project;
+use Webkul\Project\Models\Task;
+use Webkul\Project\Observers\ProjectObserver;
+use Webkul\Project\Observers\TaskObserver;
 
 class ProjectServiceProvider extends PackageServiceProvider
 {
@@ -49,7 +53,8 @@ class ProjectServiceProvider extends PackageServiceProvider
 
     public function packageBooted(): void
     {
-        //
+        Project::observe(ProjectObserver::class);
+        Task::observe(TaskObserver::class);
     }
 
     public function packageRegistered(): void

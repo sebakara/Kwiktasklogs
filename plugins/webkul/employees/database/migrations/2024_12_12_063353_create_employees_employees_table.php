@@ -12,6 +12,8 @@ return new class extends Migration
      */
     public function up(): void
     {
+        $this->ensureCalendarsTableExists();
+
         Schema::create('employees_employees', function (Blueprint $table) {
             $table->id();
 
@@ -120,5 +122,49 @@ return new class extends Migration
     public function down(): void
     {
         Schema::dropIfExists('employees_employees');
+    }
+
+    /**
+     * The employees table references `calendars`, which is normally created by the
+     * support plugin. When employees is installed first (or support is not installed),
+     * create the table here so the foreign key can be applied.
+     */
+    protected function ensureCalendarsTableExists(): void
+    {
+        if (Schema::hasTable('calendars')) {
+            return;
+        }
+
+        if (Schema::hasTable('employees_calendars')) {
+            Schema::rename('employees_calendars', 'calendars');
+
+            return;
+        }
+
+        Schema::create('calendars', function (Blueprint $table): void {
+            $table->id();
+
+            $table->string('name')->comment('Name');
+            $table->string('timezone')->comment('Timezone');
+            $table->float('hours_per_day')->nullable()->comment('Average Hour per Day');
+            $table->boolean('is_active')->default(false)->comment('Status');
+            $table->boolean('two_weeks_calendar')->nullable()->default(false)->comment('Calendar in 2 weeks mode');
+            $table->boolean('flexible_hours')->nullable()->default(false)->comment('Flexible Hours');
+            $table->float('full_time_required_hours')->nullable()->comment('Company Full Time');
+
+            $table->unsignedBigInteger('creator_id')->nullable()->comment('Created By');
+            $table->unsignedBigInteger('company_id')->nullable()->comment('Company');
+
+            if (Schema::hasTable('users')) {
+                $table->foreign('creator_id')->references('id')->on('users')->onDelete('set null');
+            }
+
+            if (Schema::hasTable('companies')) {
+                $table->foreign('company_id')->references('id')->on('companies')->onDelete('set null');
+            }
+
+            $table->softDeletes();
+            $table->timestamps();
+        });
     }
 };

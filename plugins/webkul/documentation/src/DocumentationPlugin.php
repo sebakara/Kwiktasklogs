@@ -26,10 +26,19 @@ class DocumentationPlugin implements Plugin
 
         $panel
             ->when($panel->getId() == 'admin', function (Panel $panel) {
-                $panel->discoverResources(
-                    in: __DIR__.'/Filament/Resources',
-                    for: 'Webkul\\Documentation\\Filament\\Resources'
-                );
+                $panel
+                    ->discoverResources(
+                        in: __DIR__.'/Filament/Resources',
+                        for: 'Webkul\\Documentation\\Filament\\Resources'
+                    )
+                    ->discoverPages(
+                        in: __DIR__.'/Filament/Pages',
+                        for: 'Webkul\\Documentation\\Filament\\Pages'
+                    )
+                    ->discoverClusters(
+                        in: __DIR__.'/Filament/Clusters',
+                        for: 'Webkul\\Documentation\\Filament\\Clusters'
+                    );
             });
     }
 

@@ -29,7 +29,9 @@ class CurrencySeeder extends Seeder
                 return $currency;
             })->toArray();
 
-            DB::table('currencies')->insert($currencies);
+            foreach (array_chunk($currencies, 100) as $chunk) {
+                DB::table('currencies')->insert($chunk);
+            }
         }
     }
 }
