@@ -14,6 +14,7 @@ use Webkul\Employee\Models\Department;
 use Webkul\Employee\Models\Employee;
 use Webkul\Security\Models\User;
 use Webkul\Support\Models\Company;
+use Webkul\TimeOff\Database\Factories\LeaveAllocationFactory;
 use Webkul\TimeOff\Enums\AllocationType;
 use Webkul\TimeOff\Enums\State;
 
@@ -37,6 +38,8 @@ class LeaveAllocation extends Model
         'second_approver_id',
         'department_id',
         'accrual_plan_id',
+        'package_id',
+        'package_assignment_id',
         'creator_id',
         'name',
         'state',
@@ -133,6 +136,16 @@ class LeaveAllocation extends Model
         return $this->belongsTo(LeaveAccrualPlan::class, 'accrual_plan_id');
     }
 
+    public function package(): BelongsTo
+    {
+        return $this->belongsTo(TimeOffPackage::class, 'package_id');
+    }
+
+    public function packageAssignment(): BelongsTo
+    {
+        return $this->belongsTo(TimeOffPackageAssignment::class, 'package_assignment_id');
+    }
+
     public function creator(): BelongsTo
     {
         return $this->belongsTo(User::class, 'user_id');
@@ -197,9 +210,15 @@ class LeaveAllocation extends Model
         static::creating(function ($leaveAllocation) {
             $authUser = Auth::user();
 
-            $leaveAllocation->creator_id = $authUser->id;
-
-            $leaveAllocation->employee_company_id ??= $authUser?->default_company_id;
+            if ($authUser) {
+                $leaveAllocation->creator_id ??= $authUser->id;
+                $leaveAllocation->employee_company_id ??= $authUser->default_company_id;
+            }
         });
+    }
+
+    protected static function newFactory(): LeaveAllocationFactory
+    {
+        return LeaveAllocationFactory::new();
     }
 }

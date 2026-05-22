@@ -11,6 +11,7 @@ use Spatie\EloquentSortable\Sortable;
 use Spatie\EloquentSortable\SortableTrait;
 use Webkul\Security\Models\User;
 use Webkul\Support\Models\Company;
+use Webkul\TimeOff\Database\Factories\LeaveTypeFactory;
 use Webkul\TimeOff\Enums\LeaveValidationType;
 
 class LeaveType extends Model implements Sortable
@@ -72,9 +73,15 @@ class LeaveType extends Model implements Sortable
         static::creating(function ($leaveType) {
             $authUser = Auth::user();
 
-            $leaveType->creator_id = $authUser->id;
-
-            $leaveType->company_id ??= $authUser?->default_company_id;
+            if ($authUser) {
+                $leaveType->creator_id ??= $authUser->id;
+                $leaveType->company_id ??= $authUser->default_company_id;
+            }
         });
+    }
+
+    protected static function newFactory(): LeaveTypeFactory
+    {
+        return LeaveTypeFactory::new();
     }
 }

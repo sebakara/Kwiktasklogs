@@ -41,7 +41,7 @@ class LeaveTypeFactory extends Factory
             'max_allowed_negative'                => fake()->randomElement([1, 2, 3, 5, 10]),
             'creator_id'                          => fake()->boolean(70) ? fake()->numberBetween(1, 5000) : null,
             'leave_validation_type'               => fake()->randomElement(['both', 'manager', 'hr']),
-            'requires_allocation'                 => fake()->boolean(),
+            'requires_allocation'                 => fake()->randomElement(['yes', 'no']),
             'employee_requests'                   => fake()->boolean(),
             'allocation_validation_type'          => 'hr',
             'time_type'                           => 'leave',

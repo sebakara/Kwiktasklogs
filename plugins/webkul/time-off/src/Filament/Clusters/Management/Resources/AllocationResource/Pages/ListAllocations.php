@@ -20,10 +20,13 @@ class ListAllocations extends ListRecords
     public function getPresetTableViews(): array
     {
         return [
+            'all' => PresetView::make(__('time-off::filament/clusters/management/resources/allocation/pages/list-allocations.preset-views.all'))
+                ->icon('heroicon-o-queue-list')
+                ->favorite()
+                ->setAsDefault(),
             'waiting_for_me' => PresetView::make(__('time-off::filament/clusters/management/resources/allocation/pages/list-allocations.preset-views.waiting-for-me'))
                 ->icon('heroicon-o-user-circle')
                 ->favorite()
-                ->setAsDefault()
                 ->modifyQueryUsing(fn (Builder $query) => $query->whereIn('state', [
                     State::CONFIRM->value,
                     State::VALIDATE_ONE->value,
@@ -31,7 +34,6 @@ class ListAllocations extends ListRecords
             'second_approval' => PresetView::make(__('time-off::filament/clusters/management/resources/allocation/pages/list-allocations.preset-views.second-approval'))
                 ->icon('heroicon-o-shield-check')
                 ->favorite()
-                ->setAsDefault()
                 ->modifyQueryUsing(fn (Builder $query) => $query->whereIn('state', [
                     State::CONFIRM->value,
                     State::VALIDATE_TWO->value,
@@ -39,8 +41,11 @@ class ListAllocations extends ListRecords
             'approved' => PresetView::make(__('time-off::filament/clusters/management/resources/allocation/pages/list-allocations.preset-views.approved'))
                 ->icon('heroicon-o-check-badge')
                 ->favorite()
-                ->setAsDefault()
                 ->modifyQueryUsing(fn (Builder $query) => $query->where('state', State::VALIDATE_TWO->value)),
+            'from_package' => PresetView::make(__('time-off::filament/clusters/management/resources/allocation/pages/list-allocations.preset-views.from-package'))
+                ->icon('heroicon-o-gift')
+                ->favorite()
+                ->modifyQueryUsing(fn (Builder $query) => $query->whereNotNull('package_id')),
             'valid' => PresetView::make(__('time-off::filament/clusters/management/resources/allocation/pages/list-allocations.preset-views.currently-valid'))
                 ->icon('heroicon-o-check')
                 ->modifyQueryUsing(function (Builder $query) {

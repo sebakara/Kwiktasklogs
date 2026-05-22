@@ -50,6 +50,7 @@ class DocumentationServiceProvider extends PackageServiceProvider
                 '2026_05_07_153500_add_project_and_assignee_to_documentation_articles_table',
                 '2026_05_07_230000_add_documentation_assignee_to_projects_table',
                 '2026_05_19_120000_ensure_documentation_assignee_on_projects_table',
+                '2026_05_21_140000_ensure_documentation_assignee_column_on_projects',
                 '2026_05_18_100000_create_documentation_spaces_table',
                 '2026_05_18_100100_create_documentation_templates_table',
                 '2026_05_18_100200_create_documentation_pages_table',

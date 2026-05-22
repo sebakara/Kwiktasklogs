@@ -6,6 +6,7 @@ use Webkul\TimeOff\Filament\Clusters\Configurations\Resources\ActivityTypeResour
 use Webkul\TimeOff\Filament\Clusters\Configurations\Resources\LeaveTypeResource;
 use Webkul\TimeOff\Filament\Clusters\Configurations\Resources\MandatoryDayResource;
 use Webkul\TimeOff\Filament\Clusters\Configurations\Resources\PublicHolidayResource;
+use Webkul\TimeOff\Filament\Clusters\Configurations\Resources\TimeOffPackageResource;
 use Webkul\TimeOff\Filament\Clusters\Management;
 use Webkul\TimeOff\Filament\Clusters\Management\Resources\AllocationResource;
 use Webkul\TimeOff\Filament\Clusters\Management\Resources\TimeOffResource;
@@ -25,16 +26,17 @@ $reorder = ['reorder'];
 return [
     'resources' => [
         'manage' => [
-            MyTimeOffResource::class => [...$basic, ...$delete],
-            MyAllocationResource::class => [...$basic, ...$delete],
-            AllocationResource::class => [...$basic, ...$delete],
-            TimeOffResource::class => [...$basic, ...$delete],
-            ByEmployeeResource::class => [...$basic, ...$delete],
-            AccrualPlanResource::class => [...$basic, ...$delete],
-            PublicHolidayResource::class => [...$basic, ...$delete],
-            MandatoryDayResource::class => [...$basic, ...$delete],
-            LeaveTypeResource::class => [...$basic, ...$delete, ...$restore, ...$forceDelete, ...$reorder],
-            ActivityTypeResource::class => [...$basic, ...$delete, ...$restore, ...$forceDelete, ...$reorder],
+            MyTimeOffResource::class      => [...$basic, ...$delete],
+            MyAllocationResource::class   => [...$basic, ...$delete],
+            AllocationResource::class     => [...$basic, ...$delete],
+            TimeOffResource::class        => [...$basic, ...$delete],
+            ByEmployeeResource::class     => [...$basic, ...$delete],
+            AccrualPlanResource::class    => [...$basic, ...$delete],
+            PublicHolidayResource::class  => [...$basic, ...$delete],
+            MandatoryDayResource::class   => [...$basic, ...$delete],
+            LeaveTypeResource::class      => [...$basic, ...$delete, ...$restore, ...$forceDelete, ...$reorder],
+            TimeOffPackageResource::class => [...$basic, ...$delete],
+            ActivityTypeResource::class   => [...$basic, ...$delete, ...$restore, ...$forceDelete, ...$reorder],
         ],
         'exclude' => [],
     ],

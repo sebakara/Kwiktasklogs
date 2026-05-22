@@ -3,10 +3,13 @@
 namespace Webkul\TimeOff;
 
 use Filament\Panel;
+use Illuminate\Support\Facades\Gate;
 use Webkul\PluginManager\Console\Commands\InstallCommand;
 use Webkul\PluginManager\Console\Commands\UninstallCommand;
 use Webkul\PluginManager\Package;
 use Webkul\PluginManager\PackageServiceProvider;
+use Webkul\TimeOff\Models\TimeOffPackage;
+use Webkul\TimeOff\Policies\TimeOffPackagePolicy;
 
 class TimeOffServiceProvider extends PackageServiceProvider
 {
@@ -27,6 +30,11 @@ class TimeOffServiceProvider extends PackageServiceProvider
                 '2025_01_21_085833_create_time_off_leave_accrual_levels_table',
                 '2025_01_22_101656_create_time_off_leave_allocations_table',
                 '2025_08_13_120000_alter_private_name_column_in_time_off_leaves_table',
+                '2026_05_21_100000_create_time_off_packages_table',
+                '2026_05_21_100100_create_time_off_package_lines_table',
+                '2026_05_21_100200_create_time_off_package_assignments_table',
+                '2026_05_21_100300_add_package_fields_to_time_off_leave_allocations_table',
+                '2026_05_21_150000_ensure_time_off_package_permissions',
             ])
             ->hasDependencies([
                 'employees',
@@ -48,5 +56,13 @@ class TimeOffServiceProvider extends PackageServiceProvider
         Panel::configureUsing(function (Panel $panel): void {
             $panel->plugin(TimeOffPlugin::make());
         });
+    }
+
+    public function packageBooted(): void
+    {
+        Gate::policy(
+            TimeOffPackage::class,
+            TimeOffPackagePolicy::class,
+        );
     }
 }

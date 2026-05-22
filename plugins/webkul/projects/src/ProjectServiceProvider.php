@@ -16,11 +16,14 @@ class ProjectServiceProvider extends PackageServiceProvider
 {
     public static string $name = 'projects';
 
+    public static string $viewNamespace = 'projects';
+
     public function configureCustomPackage(Package $package): void
     {
         $package->name(static::$name)
             ->hasRoute('api')
             ->hasTranslations()
+            ->hasViews()
             ->hasMigrations([
                 '2024_12_12_074920_create_projects_project_stages_table',
                 '2024_12_12_074929_create_projects_projects_table',

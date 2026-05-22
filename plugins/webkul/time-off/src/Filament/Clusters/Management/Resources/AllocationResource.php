@@ -179,6 +179,11 @@ class AllocationResource extends Resource
                     ->label(__('time-off::filament/clusters/management/resources/allocation.table.columns.time-off-type'))
                     ->sortable()
                     ->searchable(),
+                TextColumn::make('package.name')
+                    ->label(__('time-off::filament/clusters/management/resources/allocation.table.columns.package'))
+                    ->placeholder('—')
+                    ->sortable()
+                    ->toggleable(),
                 TextColumn::make('number_of_days')
                     ->label(__('time-off::filament/clusters/management/resources/allocation.table.columns.amount'))
                     ->sortable()

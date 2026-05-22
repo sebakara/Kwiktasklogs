@@ -40,6 +40,7 @@ return [
             'amount'          => 'الكمية',
             'allocation-type' => 'نوع التخصيص',
             'status'          => 'الحالة',
+            'package'         => 'الحزمة',
         ],
 
         'groups' => [

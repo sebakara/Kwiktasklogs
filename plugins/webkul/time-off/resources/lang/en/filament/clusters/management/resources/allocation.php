@@ -40,6 +40,7 @@ return [
             'amount'          => 'Amount',
             'allocation-type' => 'Allocation Type',
             'status'          => 'Status',
+            'package'         => 'Package',
         ],
 
         'groups' => [
