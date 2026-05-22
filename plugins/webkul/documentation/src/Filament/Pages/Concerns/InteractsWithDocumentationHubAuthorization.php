@@ -12,7 +12,7 @@ trait InteractsWithDocumentationHubAuthorization
         $user = auth()->user();
 
         return $user instanceof User
-            && app(DocumentationAccessService::class)->canAccessHub($user);
+            && app(DocumentationAccessService::class)->canAccessProjectDocumentationPortal($user);
     }
 
     /**

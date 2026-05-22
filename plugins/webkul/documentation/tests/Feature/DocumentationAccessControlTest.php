@@ -5,8 +5,12 @@ use Webkul\Documentation\Models\DocumentationPage;
 use Webkul\Documentation\Models\DocumentationPermission;
 use Webkul\Documentation\Models\DocumentationSpace;
 use Webkul\Documentation\Services\DocumentationAccessService;
+use Webkul\Partner\Models\Partner;
+use Webkul\Project\Models\Project;
+use Webkul\Project\Models\ProjectStage;
 use Webkul\Security\Models\Role;
 use Webkul\Security\Models\User;
+use Webkul\Support\Models\Company;
 
 beforeEach(function (): void {
     $this->access = app(DocumentationAccessService::class);
@@ -106,3 +110,51 @@ it('applies role based grants', function (): void {
 
     expect($this->access->canEditPage($user, $page))->toBeTrue();
 });
+
+it('allows project participants without hub roles to view project documentation', function (): void {
+    if (! class_exists(Project::class)) {
+        $this->markTestSkipped('Projects plugin is not available.');
+    }
+
+    $employee = User::factory()->create();
+
+    $project = createDocumentationAccessTestProject('Docs Access Project '.uniqid(), $employee->id);
+
+    $space = DocumentationSpace::factory()->create([
+        'project_id' => $project->id,
+    ]);
+
+    $draftPage = DocumentationPage::factory()->create([
+        'space_id'     => $space->id,
+        'project_id'   => $project->id,
+        'is_published' => false,
+    ]);
+
+    $this->actingAs($employee);
+
+    expect($this->access->canAccessHub($employee))->toBeFalse()
+        ->and($this->access->canAccessProjectDocumentationPortal($employee))->toBeTrue()
+        ->and($this->access->canViewSpace($employee, $space))->toBeTrue()
+        ->and($this->access->canViewPage($employee, $draftPage))->toBeTrue()
+        ->and($this->access->canEditPage($employee, $draftPage))->toBeFalse();
+});
+
+function createDocumentationAccessTestProject(string $name, int $userId): Project
+{
+    $companyId = Company::query()->value('id');
+    $stageId = ProjectStage::query()->value('id');
+    $partnerId = Partner::query()->value('id');
+
+    if ($companyId === null || $stageId === null) {
+        test()->markTestSkipped('Missing company or stage for project factory.');
+    }
+
+    return Project::factory()->create([
+        'name'        => $name,
+        'company_id'  => $companyId,
+        'stage_id'    => $stageId,
+        'user_id'     => $userId,
+        'creator_id'  => $userId,
+        'partner_id'  => $partnerId,
+    ]);
+}

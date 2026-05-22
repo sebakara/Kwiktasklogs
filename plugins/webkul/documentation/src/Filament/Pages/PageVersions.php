@@ -10,6 +10,7 @@ use Webkul\Documentation\Filament\Clusters\DocumentationHubCluster;
 use Webkul\Documentation\Filament\Pages\Concerns\InteractsWithDocumentationHubActions;
 use Webkul\Documentation\Filament\Pages\Concerns\InteractsWithDocumentationHubAuthorization;
 use Webkul\Documentation\Filament\Pages\Concerns\InteractsWithDocumentationHubLayout;
+use Webkul\Documentation\Filament\Pages\Concerns\UsesCompactDocumentationHubLayout;
 use Webkul\Documentation\Models\DocumentationPage;
 use Webkul\Documentation\Models\DocumentationPageVersion;
 use Webkul\Documentation\Models\DocumentationSpace;
@@ -22,6 +23,7 @@ class PageVersions extends Page
     use InteractsWithDocumentationHubActions;
     use InteractsWithDocumentationHubAuthorization;
     use InteractsWithDocumentationHubLayout;
+    use UsesCompactDocumentationHubLayout;
 
     protected static ?string $cluster = DocumentationHubCluster::class;
 
@@ -125,16 +127,24 @@ class PageVersions extends Page
             ->all();
     }
 
-    public function getTitle(): string|Htmlable
-    {
-        return __('documentation::filament/hub.pages.versions_title', ['title' => $this->record->title]);
-    }
-
     public function pageUrl(): string
     {
         return ViewPage::getUrl([
             'documentationSpace' => $this->space->id,
             'pageRecord'         => $this->record->id,
         ]);
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    public function getBreadcrumbs(): array
+    {
+        return [];
+    }
+
+    public function getHeading(): string|Htmlable|null
+    {
+        return null;
     }
 }

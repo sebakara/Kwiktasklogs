@@ -1,56 +1,66 @@
 <x-documentation::filament.hub.layout>
-    <div class="mb-4 flex flex-wrap items-center gap-2 text-sm">
-        <a href="{{ $this->versionsUrl() }}" class="text-primary-600 hover:underline dark:text-primary-400">
+    <nav class="doc-hub-versions-breadcrumb" aria-label="{{ __('documentation::filament/hub.versions.back_to_list') }}">
+        <a href="{{ $this->versionsUrl() }}" class="doc-hub-versions-breadcrumb-link">
+            <x-filament::icon icon="heroicon-o-clock" class="h-4 w-4 shrink-0" />
             {{ __('documentation::filament/hub.versions.back_to_list') }}
         </a>
-        <span class="text-gray-400">/</span>
-        <a href="{{ $this->currentPageUrl() }}" class="text-gray-500 hover:underline dark:text-gray-400">
+        <span class="doc-hub-versions-breadcrumb-sep" aria-hidden="true">/</span>
+        <a href="{{ $this->currentPageUrl() }}" class="doc-hub-versions-breadcrumb-link">
             {{ __('documentation::filament/hub.pages.back_to_page') }}
         </a>
-    </div>
+        <span class="doc-hub-versions-breadcrumb-sep" aria-hidden="true">/</span>
+        <span class="doc-hub-versions-breadcrumb-current">
+            {{ __('documentation::filament/hub.versions.view_version', ['number' => $version->version_number]) }}
+        </span>
+    </nav>
 
-    <div class="mb-6 flex flex-wrap items-start justify-between gap-4">
-        <div>
-            <p class="text-sm font-medium text-primary-600 dark:text-primary-400">
+    <header class="doc-hub-version-show-header">
+        <div class="min-w-0 flex-1">
+            <p class="doc-hub-version-show-eyebrow">
                 {{ __('documentation::filament/hub.pages.version_label', ['number' => $version->version_number]) }}
             </p>
-            <h1 class="mt-1 text-2xl font-semibold text-gray-950 dark:text-white">{{ $version->title }}</h1>
+            <h2 class="doc-hub-version-show-title">{{ $version->title }}</h2>
             @if ($version->change_note)
-                <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">{{ $version->change_note }}</p>
+                <p class="doc-hub-version-show-note">{{ $version->change_note }}</p>
             @endif
-            <p class="mt-2 text-xs text-gray-400">
-                {{ $version->creator?->name }} · {{ $version->created_at?->toDayDateTimeString() }}
+            <p class="doc-hub-versions-meta doc-hub-version-show-meta">
+                <x-filament::icon icon="heroicon-o-user-circle" class="h-3.5 w-3.5 shrink-0" />
+                <span>{{ $version->creator?->name ?? '—' }}</span>
+                <span class="doc-hub-versions-meta-sep" aria-hidden="true">·</span>
+                <x-filament::icon icon="heroicon-o-calendar-days" class="h-3.5 w-3.5 shrink-0" />
+                <span>{{ $version->created_at?->toDayDateTimeString() }}</span>
             </p>
         </div>
+
         @if ($this->canRestore())
-            <button
-                type="button"
+            <x-documentation::filament.hub.btn
+                variant="primary"
                 wire:click="restoreVersion"
-                wire:confirm="{{ __('documentation::filament/hub.versions.confirm_restore') }}"
-                class="inline-flex items-center gap-2 rounded-lg bg-primary-600 px-4 py-2 text-sm font-medium text-white hover:bg-primary-500"
+                :confirm="__('documentation::filament/hub.versions.confirm_restore')"
+                target="restoreVersion"
+                class="doc-hub-btn--inline shrink-0"
             >
                 <x-filament::icon icon="heroicon-o-arrow-uturn-left" class="h-4 w-4" />
                 {{ __('documentation::filament/hub.versions.restore') }}
-            </button>
+            </x-documentation::filament.hub.btn>
         @endif
-    </div>
+    </header>
 
     @if ($version->summary)
-        <p class="mb-4 text-base text-gray-600 dark:text-gray-300">{{ $version->summary }}</p>
+        <p class="doc-hub-version-show-summary">{{ $version->summary }}</p>
     @endif
 
-    <div class="grid gap-6 xl:grid-cols-4">
+    <div @class([
+        'doc-hub-version-show-grid',
+        'doc-hub-version-show-grid--with-toc' => count($tableOfContents) > 0,
+    ])>
         @if (count($tableOfContents) > 0)
-            <aside class="xl:col-span-1 xl:order-2">
+            <aside class="doc-hub-version-show-toc">
                 @include('documentation::filament.hub.partials.table-of-contents', ['items' => $tableOfContents])
             </aside>
         @endif
 
-        <article @class([
-            'prose prose-sm max-w-none rounded-xl border border-gray-200 bg-white p-6 shadow-sm dark:prose-invert dark:border-gray-700 dark:bg-gray-900',
-            'xl:col-span-3' => count($tableOfContents) > 0,
-            'xl:col-span-4' => count($tableOfContents) === 0,
-        ])>
+        <article class="doc-hub-version-show-article">
             {!! $renderedContent !!}
         </article>
     </div>

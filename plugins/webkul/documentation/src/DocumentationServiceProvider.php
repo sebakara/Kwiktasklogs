@@ -5,7 +5,10 @@ namespace Webkul\Documentation;
 use Filament\Panel;
 use Filament\Support\Assets\Css;
 use Filament\Support\Facades\FilamentAsset;
+use Filament\Support\Facades\FilamentView;
+use Filament\View\PanelsRenderHook;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\HtmlString;
 use Livewire\Livewire;
 use Webkul\Documentation\Livewire\PublicSharedPage;
 use Webkul\Documentation\Models\DocumentationArticle;
@@ -101,6 +104,19 @@ class DocumentationServiceProvider extends PackageServiceProvider
         FilamentAsset::register([
             Css::make('documentation-portal', __DIR__.'/../resources/css/documentation-portal.css'),
         ], 'documentation');
+
+        FilamentView::registerRenderHook(
+            PanelsRenderHook::STYLES_AFTER,
+            function (): ?HtmlString {
+                if (! request()->routeIs('filament.admin.documentation.*')) {
+                    return null;
+                }
+
+                return new HtmlString(
+                    '<link rel="stylesheet" href="'.e(FilamentAsset::getStyleHref('documentation-portal', 'documentation')).'" />'
+                );
+            },
+        );
 
         Livewire::component('documentation-public-shared-page', PublicSharedPage::class);
 

@@ -52,6 +52,15 @@ class DocumentationAccessService
             || $this->hasAnyExplicitGrant($user);
     }
 
+    /**
+     * Hub entry for users with documentation roles/grants or readable project documentation.
+     */
+    public function canAccessProjectDocumentationPortal(User $user): bool
+    {
+        return $this->canAccessHub($user)
+            || DocumentationProjectIntegration::userHasAnyAccessibleProject();
+    }
+
     public function isSuperAdmin(User $user): bool
     {
         if ($this->isPanelAdministrator($user)) {
@@ -145,6 +154,10 @@ class DocumentationAccessService
             return true;
         }
 
+        if ($space->project_id !== null && DocumentationProjectIntegration::userCanViewProject((int) $space->project_id)) {
+            return true;
+        }
+
         if ($this->hasGrant($user, $space, DocumentationPermissionLevel::View)) {
             return true;
         }
@@ -181,6 +194,10 @@ class DocumentationAccessService
             return true;
         }
 
+        if ($page->project_id !== null && DocumentationProjectIntegration::userCanViewProject((int) $page->project_id)) {
+            return true;
+        }
+
         if ($this->canEditPage($user, $page)) {
             return true;
         }
@@ -190,7 +207,7 @@ class DocumentationAccessService
         }
 
         if ($page->space && $this->hasGrant($user, $page->space, DocumentationPermissionLevel::View)) {
-            return true;
+            return $page->is_published || $this->canEditSpace($user, $page->space);
         }
 
         return $page->is_published
@@ -312,7 +329,7 @@ class DocumentationAccessService
 
         $viewSpaceIds = $this->idsForUser($user, DocumentationSpace::class, $this->viewLevels());
 
-        $projectIds = DocumentationProjectIntegration::projectIdsForAssignee($user);
+        $projectIds = DocumentationProjectIntegration::accessibleProjectIdsForUser();
 
         $query->where(function (Builder $accessibleQuery) use ($editPageIds, $editSpaceIds, $viewPageIds, $viewSpaceIds, $projectIds): void {
             if ($editPageIds !== []) {

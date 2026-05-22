@@ -327,6 +327,9 @@ return [
 
     'versions' => [
         'title'           => 'Version history',
+        'subtitle'        => 'Snapshots from when this page was created, published, or saved. Preview any version or restore an older copy to replace the current content.',
+        'count'           => ':count version|:count versions',
+        'back_to_list'    => 'Version history',
         'view'            => 'View',
         'view_version'    => 'Version :number',
         'view_title'      => 'Version :number',

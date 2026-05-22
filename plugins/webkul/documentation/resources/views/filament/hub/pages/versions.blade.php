@@ -1,62 +1,102 @@
 <x-documentation::filament.hub.layout>
-    <div class="mb-4">
-        <a href="{{ $this->pageUrl() }}" class="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
-            <x-filament::icon icon="heroicon-o-arrow-left" class="h-4 w-4" />
+    <nav class="doc-hub-versions-breadcrumb" aria-label="{{ __('documentation::filament/hub.pages.back_to_page') }}">
+        <a href="{{ $this->pageUrl() }}" class="doc-hub-versions-breadcrumb-link">
+            <x-filament::icon icon="heroicon-o-arrow-left" class="h-4 w-4 shrink-0" />
             {{ __('documentation::filament/hub.pages.back_to_page') }}
         </a>
+        <span class="doc-hub-versions-breadcrumb-sep" aria-hidden="true">/</span>
+        <span class="doc-hub-versions-breadcrumb-current">{{ $this->record->title }}</span>
+    </nav>
+
+    <div class="doc-hub-versions-intro">
+        <div class="doc-hub-versions-intro-icon" aria-hidden="true">
+            <x-filament::icon icon="heroicon-o-clock" class="h-6 w-6" />
+        </div>
+        <div class="min-w-0 flex-1">
+            <p class="doc-hub-versions-intro-text">{{ __('documentation::filament/hub.versions.subtitle') }}</p>
+            @if (count($versions) > 0)
+                <p class="doc-hub-versions-intro-meta">
+                    {{ trans_choice('documentation::filament/hub.versions.count', count($versions), ['count' => count($versions)]) }}
+                    · {{ $space->name }}
+                </p>
+            @endif
+        </div>
     </div>
 
-    <section class="rounded-xl border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-900">
+    <x-documentation::filament.hub.section-card>
         @if (count($versions) > 0)
-            <div class="divide-y divide-gray-100 dark:divide-gray-800">
+            <ol class="doc-hub-versions-list" role="list">
                 @foreach ($versions as $version)
-                    <div class="flex flex-wrap items-start justify-between gap-3 px-5 py-4">
-                        <div class="min-w-0 flex-1">
-                            <div class="flex flex-wrap items-center gap-2">
-                                <p class="font-medium text-gray-950 dark:text-white">
-                                    {{ __('documentation::filament/hub.pages.version_label', ['number' => $version['version_number']]) }}
-                                    — {{ $version['title'] }}
-                                </p>
-                                @if ($version['is_current'])
-                                    <span class="rounded bg-primary-50 px-2 py-0.5 text-xs font-medium text-primary-700 dark:bg-primary-500/10 dark:text-primary-400">
-                                        {{ __('documentation::filament/hub.versions.current') }}
-                                    </span>
-                                @endif
+                    <li @class([
+                        'doc-hub-versions-item',
+                        'doc-hub-versions-item--current' => $version['is_current'],
+                    ])>
+                        <div class="doc-hub-versions-marker" aria-hidden="true">
+                            <span class="doc-hub-versions-marker-dot"></span>
+                        </div>
+
+                        <div class="doc-hub-versions-body">
+                            <div class="doc-hub-versions-head">
+                                <div class="min-w-0 flex-1">
+                                    <div class="doc-hub-versions-title-row">
+                                        <span class="doc-hub-versions-number">
+                                            {{ __('documentation::filament/hub.pages.version_label', ['number' => $version['version_number']]) }}
+                                        </span>
+                                        @if ($version['is_current'])
+                                            <span class="doc-hub-versions-badge doc-hub-versions-badge--current">
+                                                {{ __('documentation::filament/hub.versions.current') }}
+                                            </span>
+                                        @endif
+                                    </div>
+                                    <p class="doc-hub-versions-page-title">{{ $version['title'] }}</p>
+                                </div>
+
+                                <div class="doc-hub-versions-actions">
+                                    <x-documentation::filament.hub.btn
+                                        variant="secondary"
+                                        :href="$version['view_url']"
+                                        class="doc-hub-btn--inline"
+                                    >
+                                        <x-filament::icon icon="heroicon-o-eye" class="h-4 w-4" />
+                                        {{ __('documentation::filament/hub.versions.view') }}
+                                    </x-documentation::filament.hub.btn>
+
+                                    @if ($version['can_restore'])
+                                        <x-documentation::filament.hub.btn
+                                            variant="primary"
+                                            wire:click="restoreVersion({{ $version['id'] }})"
+                                            :confirm="__('documentation::filament/hub.versions.confirm_restore')"
+                                            target="restoreVersion({{ $version['id'] }})"
+                                            class="doc-hub-btn--inline"
+                                        >
+                                            <x-filament::icon icon="heroicon-o-arrow-uturn-left" class="h-4 w-4" />
+                                            {{ __('documentation::filament/hub.versions.restore') }}
+                                        </x-documentation::filament.hub.btn>
+                                    @endif
+                                </div>
                             </div>
+
                             @if ($version['change_note'])
-                                <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">{{ $version['change_note'] }}</p>
+                                <p class="doc-hub-versions-note">{{ $version['change_note'] }}</p>
                             @endif
-                            <p class="mt-1 text-xs text-gray-400">
-                                {{ $version['creator_name'] ?? '—' }} · {{ $version['created_at'] }}
+
+                            <p class="doc-hub-versions-meta">
+                                <x-filament::icon icon="heroicon-o-user-circle" class="h-3.5 w-3.5 shrink-0" />
+                                <span>{{ $version['creator_name'] ?? '—' }}</span>
+                                <span class="doc-hub-versions-meta-sep" aria-hidden="true">·</span>
+                                <x-filament::icon icon="heroicon-o-calendar-days" class="h-3.5 w-3.5 shrink-0" />
+                                <span>{{ $version['created_at'] }}</span>
                             </p>
                         </div>
-                        <div class="flex shrink-0 flex-wrap gap-2">
-                            <a
-                                href="{{ $version['view_url'] }}"
-                                class="inline-flex items-center rounded-lg border border-gray-300 px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-200 dark:hover:bg-gray-800"
-                            >
-                                {{ __('documentation::filament/hub.versions.view') }}
-                            </a>
-                            @if ($version['can_restore'])
-                                <button
-                                    type="button"
-                                    wire:click="restoreVersion({{ $version['id'] }})"
-                                    wire:confirm="{{ __('documentation::filament/hub.versions.confirm_restore') }}"
-                                    class="inline-flex items-center rounded-lg bg-primary-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-primary-500"
-                                >
-                                    {{ __('documentation::filament/hub.versions.restore') }}
-                                </button>
-                            @endif
-                        </div>
-                    </div>
+                    </li>
                 @endforeach
-            </div>
+            </ol>
         @else
             <x-documentation::filament.hub.empty-state
                 icon="heroicon-o-clock"
                 :description="__('documentation::filament/hub.pages.no_versions')"
-                class="border-0 bg-transparent dark:bg-transparent"
+                class="border-0 bg-transparent shadow-none dark:bg-transparent"
             />
         @endif
-    </section>
+    </x-documentation::filament.hub.section-card>
 </x-documentation::filament.hub.layout>

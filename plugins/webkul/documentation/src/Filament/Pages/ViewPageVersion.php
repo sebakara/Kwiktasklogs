@@ -10,6 +10,7 @@ use Webkul\Documentation\Filament\Clusters\DocumentationHubCluster;
 use Webkul\Documentation\Filament\Pages\Concerns\InteractsWithDocumentationHubActions;
 use Webkul\Documentation\Filament\Pages\Concerns\InteractsWithDocumentationHubAuthorization;
 use Webkul\Documentation\Filament\Pages\Concerns\InteractsWithDocumentationHubLayout;
+use Webkul\Documentation\Filament\Pages\Concerns\UsesCompactDocumentationHubLayout;
 use Webkul\Documentation\Models\DocumentationPage;
 use Webkul\Documentation\Models\DocumentationPageVersion;
 use Webkul\Documentation\Models\DocumentationSpace;
@@ -23,6 +24,7 @@ class ViewPageVersion extends Page
     use InteractsWithDocumentationHubActions;
     use InteractsWithDocumentationHubAuthorization;
     use InteractsWithDocumentationHubLayout;
+    use UsesCompactDocumentationHubLayout;
 
     protected static ?string $cluster = DocumentationHubCluster::class;
 
@@ -120,6 +122,19 @@ class ViewPageVersion extends Page
             'number' => $this->version->version_number,
             'title'  => $this->version->title,
         ]);
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    public function getBreadcrumbs(): array
+    {
+        return [];
+    }
+
+    public function getHeading(): string|Htmlable|null
+    {
+        return null;
     }
 
     public function versionsUrl(): string

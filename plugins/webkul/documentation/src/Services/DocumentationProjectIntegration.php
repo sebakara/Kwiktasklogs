@@ -79,4 +79,40 @@ class DocumentationProjectIntegration
 
         return $assigneeId !== null ? (int) $assigneeId : null;
     }
+
+    /**
+     * Whether the user can see this project in the Projects module (same scopes as Filament).
+     */
+    public static function userCanViewProject(int $projectId): bool
+    {
+        if (! self::isAvailable()) {
+            return false;
+        }
+
+        return Project::query()->whereKey($projectId)->exists();
+    }
+
+    /**
+     * Whether the user has access to at least one project in the Projects module.
+     */
+    public static function userHasAnyAccessibleProject(): bool
+    {
+        if (! self::isAvailable()) {
+            return false;
+        }
+
+        return Project::query()->exists();
+    }
+
+    /**
+     * @return Collection<int, int>
+     */
+    public static function accessibleProjectIdsForUser(): Collection
+    {
+        if (! self::isAvailable()) {
+            return collect();
+        }
+
+        return Project::query()->pluck('id');
+    }
 }

@@ -13,6 +13,20 @@ use Webkul\Documentation\Services\DocumentationAccessService;
 trait InteractsWithDocumentationHubLayout
 {
     /**
+     * @return array<string>
+     */
+    public function getPageClasses(): array
+    {
+        $classes = ['doc-hub-page'];
+
+        if (method_exists($this, 'usesCompactHubLayout') && $this->usesCompactHubLayout()) {
+            $classes[] = 'doc-hub-page--compact';
+        }
+
+        return $classes;
+    }
+
+    /**
      * @return array<int, array{label: string, url: string, active: bool}>
      */
     protected function getHubNavigationItems(): array
