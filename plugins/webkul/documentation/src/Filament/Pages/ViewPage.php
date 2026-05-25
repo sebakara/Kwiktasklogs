@@ -3,6 +3,7 @@
 namespace Webkul\Documentation\Filament\Pages;
 
 use Filament\Pages\Page;
+use Filament\Support\Enums\Width;
 use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\Rule;
@@ -232,12 +233,28 @@ class ViewPage extends Page
     }
 
     /**
+     * @return array<string>
+     */
+    public function getPageClasses(): array
+    {
+        return [
+            'doc-hub-page',
+            'doc-portal-reader-page',
+        ];
+    }
+
+    /**
      * Suppress the cluster sub-navigation sidebar — the portal-layout has its
      * own sidebar, so the Filament sub-navigation panel is redundant here.
      */
     public function getSubNavigation(): array
     {
         return [];
+    }
+
+    public function getMaxContentWidth(): Width|string|null
+    {
+        return Width::Full;
     }
 
     /**

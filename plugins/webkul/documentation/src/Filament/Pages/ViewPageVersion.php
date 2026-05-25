@@ -38,7 +38,7 @@ class ViewPageVersion extends Page
 
     public DocumentationPage $record;
 
-    public DocumentationPageVersion $version;
+    public DocumentationPageVersion $versionRecord;
 
     public string $renderedContent = '';
 
@@ -53,14 +53,14 @@ class ViewPageVersion extends Page
             ->where('space_id', $this->space->id)
             ->findOrFail($pageRecord);
 
-        $this->version = DocumentationPageVersion::query()
+        $this->versionRecord = DocumentationPageVersion::query()
             ->where('page_id', $this->record->id)
             ->with('creator:id,name')
             ->findOrFail($version);
 
-        Gate::authorize('view', $this->version);
+        Gate::authorize('view', $this->versionRecord);
 
-        $processed = app(DocumentationTableOfContentsService::class)->process($this->version->content);
+        $processed = app(DocumentationTableOfContentsService::class)->process($this->versionRecord->content);
 
         $this->renderedContent = $processed['content'];
         $this->tableOfContents = $processed['items'];
@@ -71,25 +71,25 @@ class ViewPageVersion extends Page
         $redirectUrl = null;
 
         $this->runHubAction(function () use (&$redirectUrl): void {
-            Gate::authorize('restore', $this->version);
+            Gate::authorize('restore', $this->versionRecord);
 
             $versionService = app(DocumentationPageVersionService::class);
 
-            if ($versionService->isCurrentVersion($this->record, $this->version)) {
+            if ($versionService->isCurrentVersion($this->record, $this->versionRecord)) {
                 $this->notifyHubError(__('documentation::filament/hub.versions.already_current'));
 
                 return;
             }
 
-            $restored = $versionService->restore($this->record, $this->version);
+            $restored = $versionService->restore($this->record, $this->versionRecord);
 
             app(DocumentationAuditService::class)->log(
                 DocumentationAuditAction::VersionRestored,
                 auth()->user(),
                 page: $restored,
                 metadata: [
-                    'version_id'     => $this->version->id,
-                    'version_number' => $this->version->version_number,
+                    'version_id'     => $this->versionRecord->id,
+                    'version_number' => $this->versionRecord->version_number,
                 ],
             );
 
@@ -112,15 +112,15 @@ class ViewPageVersion extends Page
             return false;
         }
 
-        return ! app(DocumentationPageVersionService::class)->isCurrentVersion($this->record, $this->version)
+        return ! app(DocumentationPageVersionService::class)->isCurrentVersion($this->record, $this->versionRecord)
             && app(DocumentationAccessService::class)->canEditPage($user, $this->record);
     }
 
     public function getTitle(): string|Htmlable
     {
         return __('documentation::filament/hub.versions.view_title', [
-            'number' => $this->version->version_number,
-            'title'  => $this->version->title,
+            'number' => $this->versionRecord->version_number,
+            'title'  => $this->versionRecord->title,
         ]);
     }
 

@@ -10,25 +10,25 @@
         </a>
         <span class="doc-hub-versions-breadcrumb-sep" aria-hidden="true">/</span>
         <span class="doc-hub-versions-breadcrumb-current">
-            {{ __('documentation::filament/hub.versions.view_version', ['number' => $version->version_number]) }}
+            {{ __('documentation::filament/hub.versions.view_version', ['number' => $versionRecord->version_number]) }}
         </span>
     </nav>
 
     <header class="doc-hub-version-show-header">
         <div class="min-w-0 flex-1">
             <p class="doc-hub-version-show-eyebrow">
-                {{ __('documentation::filament/hub.pages.version_label', ['number' => $version->version_number]) }}
+                {{ __('documentation::filament/hub.pages.version_label', ['number' => $versionRecord->version_number]) }}
             </p>
-            <h2 class="doc-hub-version-show-title">{{ $version->title }}</h2>
-            @if ($version->change_note)
-                <p class="doc-hub-version-show-note">{{ $version->change_note }}</p>
+            <h2 class="doc-hub-version-show-title">{{ $versionRecord->title }}</h2>
+            @if ($versionRecord->change_note)
+                <p class="doc-hub-version-show-note">{{ $versionRecord->change_note }}</p>
             @endif
             <p class="doc-hub-versions-meta doc-hub-version-show-meta">
                 <x-filament::icon icon="heroicon-o-user-circle" class="h-3.5 w-3.5 shrink-0" />
-                <span>{{ $version->creator?->name ?? '—' }}</span>
+                <span>{{ $versionRecord->creator?->name ?? '—' }}</span>
                 <span class="doc-hub-versions-meta-sep" aria-hidden="true">·</span>
                 <x-filament::icon icon="heroicon-o-calendar-days" class="h-3.5 w-3.5 shrink-0" />
-                <span>{{ $version->created_at?->toDayDateTimeString() }}</span>
+                <span>{{ $versionRecord->created_at?->toDayDateTimeString() }}</span>
             </p>
         </div>
 
@@ -46,8 +46,8 @@
         @endif
     </header>
 
-    @if ($version->summary)
-        <p class="doc-hub-version-show-summary">{{ $version->summary }}</p>
+    @if ($versionRecord->summary)
+        <p class="doc-hub-version-show-summary">{{ $versionRecord->summary }}</p>
     @endif
 
     <div @class([
