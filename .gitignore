@@ -4,6 +4,7 @@
 /public/build
 /public/hot
 /public/storage
+/public/kwikopserp_nw.sql
 
 # Employee uploads: ignore files in upload dirs; tracked .gitkeep keeps paths (parent `dir/*` needs `!dir/sub/` so nested .gitkeep stays tracked)
 /public/employees/documents/*

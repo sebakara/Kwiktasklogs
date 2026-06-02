@@ -352,6 +352,8 @@ class Employee extends Model
 
     private function handlePartnerCreation(self $employee): void
     {
+        $partnerParentId = $this->resolvePartnerParentId($employee);
+
         $partner = $employee->partner()->create([
             'account_type' => 'individual',
             'sub_type'     => 'employee',
@@ -362,7 +364,7 @@ class Employee extends Model
             'phone'        => $employee?->work_phone,
             'mobile'       => $employee?->mobile_phone,
             'color'        => $employee?->color,
-            'parent_id'    => $employee?->parent_id,
+            'parent_id'    => $partnerParentId,
             'company_id'   => $employee?->company_id,
             'user_id'      => $employee?->user_id,
         ]);
@@ -373,6 +375,8 @@ class Employee extends Model
 
     private function handlePartnerUpdation(self $employee): void
     {
+        $partnerParentId = $this->resolvePartnerParentId($employee);
+
         $partner = Partner::updateOrCreate(
             ['id' => $employee->partner_id],
             [
@@ -385,7 +389,7 @@ class Employee extends Model
                 'phone'        => $employee?->work_phone,
                 'mobile'       => $employee?->mobile_phone,
                 'color'        => $employee?->color,
-                'parent_id'    => $employee?->parent_id,
+                'parent_id'    => $partnerParentId,
                 'company_id'   => $employee?->company_id,
                 'user_id'      => $employee?->user_id,
             ]
@@ -395,6 +399,21 @@ class Employee extends Model
             $employee->partner_id = $partner->id;
             $employee->save();
         }
+    }
+
+    private function resolvePartnerParentId(self $employee): ?int
+    {
+        if (! $employee->parent_id) {
+            return null;
+        }
+
+        $parentEmployee = self::query()->find($employee->parent_id);
+
+        if (! $parentEmployee instanceof self) {
+            return null;
+        }
+
+        return $parentEmployee->partner_id ?: null;
     }
 
     private function ensureUserAccount(): void
