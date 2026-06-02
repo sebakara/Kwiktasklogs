@@ -25,6 +25,10 @@ use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Auth;
+use Webkul\Security\Enums\PermissionType;
+use Webkul\Security\Models\Scopes\UserPermissionScope;
+use Webkul\Security\Models\User;
 use Webkul\Timesheet\Filament\Resources\TimesheetResource\Pages\ManageTimesheets;
 use Webkul\Timesheet\Models\Timesheet;
 
@@ -75,12 +79,19 @@ class TimesheetResource extends Resource
                     ->label(__('timesheets::filament/resources/timesheet.form.employee'))
                     ->required()
                     ->relationship('user', 'name')
+                    ->default(fn (): ?int => Auth::id())
+                    ->disabled(fn (): bool => static::restrictsTimesheetFormToCurrentUser())
+                    ->dehydrated()
                     ->searchable()
                     ->preload(),
                 Select::make('project_id')
                     ->label(__('timesheets::filament/resources/timesheet.form.project'))
                     ->required()
-                    ->relationship('project', 'name')
+                    ->relationship(
+                        name: 'project',
+                        titleAttribute: 'name',
+                        modifyQueryUsing: fn (Builder $query): Builder => static::modifyTimesheetProjectQuery($query),
+                    )
                     ->searchable()
                     ->preload()
                     ->live()
@@ -93,7 +104,15 @@ class TimesheetResource extends Resource
                     ->relationship(
                         name: 'task',
                         titleAttribute: 'title',
-                        modifyQueryUsing: fn (Get $get, Builder $query) => $query->where('project_id', $get('project_id')),
+                        modifyQueryUsing: function (Get $get, Builder $query): void {
+                            $query->where('project_id', $get('project_id'));
+
+                            if (static::restrictsTimesheetFormToCurrentUser()) {
+                                $query->whereHas('users', function (Builder $userQuery): void {
+                                    $userQuery->where('users.id', Auth::id());
+                                });
+                            }
+                        },
                     )
                     ->searchable()
                     ->preload(),
@@ -267,5 +286,35 @@ class TimesheetResource extends Resource
         return [
             'index' => ManageTimesheets::route('/'),
         ];
+    }
+
+    public static function restrictsTimesheetFormToCurrentUser(): bool
+    {
+        $user = Auth::user();
+
+        if (! $user instanceof User) {
+            return false;
+        }
+
+        if ($user->resource_permission === PermissionType::GLOBAL) {
+            return false;
+        }
+
+        return $user->employee()->exists();
+    }
+
+    public static function modifyTimesheetProjectQuery(Builder $query): Builder
+    {
+        $query
+            ->where('is_active', true)
+            ->where('allow_timesheets', true);
+
+        if (static::restrictsTimesheetFormToCurrentUser()) {
+            $query
+                ->withoutGlobalScope(UserPermissionScope::class)
+                ->assignedToUser((int) Auth::id());
+        }
+
+        return $query;
     }
 }

@@ -2,6 +2,7 @@
 
 namespace Webkul\Project\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -172,6 +173,20 @@ class Project extends Model implements Sortable
     public function tags(): BelongsToMany
     {
         return $this->belongsToMany(Tag::class, 'projects_project_tag', 'project_id', 'tag_id');
+    }
+
+    public function scopeAssignedToUser(Builder $query, int $userId): Builder
+    {
+        return $query->where(function (Builder $assignedQuery) use ($userId): void {
+            $assignedQuery
+                ->where('user_id', $userId)
+                ->orWhere('documentation_assignee_id', $userId)
+                ->orWhereHas('tasks', function (Builder $taskQuery) use ($userId): void {
+                    $taskQuery->whereHas('users', function (Builder $userQuery) use ($userId): void {
+                        $userQuery->where('users.id', $userId);
+                    });
+                });
+        });
     }
 
     protected static function booted()

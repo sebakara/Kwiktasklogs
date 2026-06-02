@@ -184,11 +184,14 @@ class TaskResource extends Resource
                                     ->disableOptionWhen(function ($label) {
                                         return str_contains($label, ' (Deleted)');
                                     })
+                                    ->required()
                                     ->preload()
                                     ->searchable()
-                                    ->preload()
                                     ->live()
-                                    ->createOptionForm(fn (Schema $schema): Schema => ProjectResource::form($schema))
+                                    ->disabled(function ($livewire): bool {
+                                        return $livewire instanceof CreateTask && $livewire->hasLockedProject();
+                                    })
+                                    ->dehydrated()
                                     ->afterStateUpdated(function (Set $set, $state) {
                                         $set('milestone_id', null);
                                         $project = $state ? Project::find($state) : null;

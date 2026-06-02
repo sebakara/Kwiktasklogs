@@ -2,7 +2,6 @@
 
 namespace Webkul\Project\Filament\Resources\TaskResource\Pages;
 
-use Filament\Actions\CreateAction;
 use Filament\Resources\Pages\ListRecords;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
@@ -99,12 +98,8 @@ class ListTasks extends ListRecords
         ];
     }
 
-    protected function getHeaderActions(): array
+    public static function canCreate(): bool
     {
-        return [
-            CreateAction::make()
-                ->label(__('projects::filament/resources/task/pages/list-tasks.header-actions.create.label'))
-                ->icon('heroicon-o-plus-circle'),
-        ];
+        return false;
     }
 }

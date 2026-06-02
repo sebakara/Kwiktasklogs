@@ -3,10 +3,10 @@
 namespace Webkul\TimeOff\Database\Factories;
 
 use Illuminate\Database\Eloquent\Factories\Factory;
-use Webkul\Support\Models\Calendar;
 use Webkul\Employee\Models\Department;
 use Webkul\Employee\Models\Employee;
 use Webkul\Security\Models\User;
+use Webkul\Support\Models\Calendar;
 use Webkul\Support\Models\Company;
 use Webkul\TimeOff\Enums\RequestDateFromPeriod;
 use Webkul\TimeOff\Enums\State;
@@ -27,8 +27,11 @@ class LeaveFactory extends Factory
      */
     public function definition(): array
     {
-        $requestDateFrom = fake()->dateTimeBetween('now', '+30 days');
-        $requestDateTo = fake()->dateTimeBetween($requestDateFrom, '+7 days');
+        $requestDateFrom = fake()->dateTimeBetween('now', '+23 days');
+        $requestDateTo = fake()->dateTimeBetween(
+            $requestDateFrom,
+            (clone $requestDateFrom)->modify('+7 days'),
+        );
         $numberOfDays = $requestDateFrom->diff($requestDateTo)->days + 1;
 
         return [

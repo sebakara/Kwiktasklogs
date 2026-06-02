@@ -6,6 +6,7 @@ use Illuminate\Auth\Access\HandlesAuthorization;
 use Webkul\Security\Models\User;
 use Webkul\Security\Traits\HasScopedPermissions;
 use Webkul\TimeOff\Models\Leave;
+use Webkul\TimeOff\Services\LeaveApprovalService;
 
 class LeavePolicy
 {
@@ -65,5 +66,15 @@ class LeavePolicy
     public function deleteAny(User $user): bool
     {
         return $user->can('delete_any_time_off_time::off');
+    }
+
+    public function approve(User $user, Leave $leave): bool
+    {
+        return app(LeaveApprovalService::class)->canApprove($user, $leave);
+    }
+
+    public function refuse(User $user, Leave $leave): bool
+    {
+        return app(LeaveApprovalService::class)->canRefuse($user, $leave);
     }
 }

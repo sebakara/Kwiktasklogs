@@ -8,7 +8,9 @@ use Webkul\PluginManager\Console\Commands\InstallCommand;
 use Webkul\PluginManager\Console\Commands\UninstallCommand;
 use Webkul\PluginManager\Package;
 use Webkul\PluginManager\PackageServiceProvider;
+use Webkul\TimeOff\Models\Leave;
 use Webkul\TimeOff\Models\TimeOffPackage;
+use Webkul\TimeOff\Policies\LeavePolicy;
 use Webkul\TimeOff\Policies\TimeOffPackagePolicy;
 
 class TimeOffServiceProvider extends PackageServiceProvider
@@ -60,6 +62,8 @@ class TimeOffServiceProvider extends PackageServiceProvider
 
     public function packageBooted(): void
     {
+        Gate::policy(Leave::class, LeavePolicy::class);
+
         Gate::policy(
             TimeOffPackage::class,
             TimeOffPackagePolicy::class,

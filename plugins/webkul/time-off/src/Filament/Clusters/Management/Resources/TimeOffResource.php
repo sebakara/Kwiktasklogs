@@ -22,6 +22,8 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Auth;
+use Webkul\Security\Models\User;
 use Webkul\TimeOff\Enums\State;
 use Webkul\TimeOff\Filament\Clusters\Management;
 use Webkul\TimeOff\Filament\Clusters\Management\Resources\TimeOffResource\Pages\CreateTimeOff;
@@ -29,6 +31,7 @@ use Webkul\TimeOff\Filament\Clusters\Management\Resources\TimeOffResource\Pages\
 use Webkul\TimeOff\Filament\Clusters\Management\Resources\TimeOffResource\Pages\ListTimeOff;
 use Webkul\TimeOff\Filament\Clusters\Management\Resources\TimeOffResource\Pages\ViewTimeOff;
 use Webkul\TimeOff\Models\Leave;
+use Webkul\TimeOff\Services\LeaveApprovalService;
 use Webkul\TimeOff\Traits\TimeOffHelper;
 
 class TimeOffResource extends Resource
@@ -128,44 +131,7 @@ class TimeOffResource extends Resource
             ])
             ->recordActions([
                 ActionGroup::make([
-                    Action::make('approve')
-                        ->icon('heroicon-o-check-circle')
-                        ->color('success')
-                        ->hidden(fn ($record) => $record->state === State::VALIDATE_TWO->value)
-                        ->action(function ($record) {
-                            if ($record->state === State::VALIDATE_ONE->value) {
-                                $record->update(['state' => State::VALIDATE_TWO->value]);
-                            } else {
-                                $record->update(['state' => State::VALIDATE_TWO->value]);
-                            }
-
-                            Notification::make()
-                                ->success()
-                                ->title(__('time-off::filament/clusters/management/resources/time-off.table.actions.approve.notification.title'))
-                                ->body(__('time-off::filament/clusters/management/resources/time-off.table.actions.approve.notification.body'))
-                                ->send();
-                        })
-                        ->label(function ($record) {
-                            if ($record->state === State::VALIDATE_ONE->value) {
-                                return __('time-off::filament/clusters/management/resources/time-off.table.actions.approve.title.validate');
-                            } else {
-                                return __('time-off::filament/clusters/management/resources/time-off.table.actions.approve.title.approve');
-                            }
-                        }),
-                    Action::make('refuse')
-                        ->icon('heroicon-o-x-circle')
-                        ->hidden(fn ($record) => $record->state === State::REFUSE->value)
-                        ->color('danger')
-                        ->action(function ($record) {
-                            $record->update(['state' => State::REFUSE->value]);
-
-                            Notification::make()
-                                ->success()
-                                ->title(__('time-off::filament/clusters/management/resources/time-off.table.actions.refused.notification.title'))
-                                ->body(__('time-off::filament/clusters/management/resources/time-off.table.actions.refused.notification.body'))
-                                ->send();
-                        })
-                        ->label(__('time-off::filament/clusters/management/resources/time-off.table.actions.refused.title')),
+                    ...static::leaveApprovalRecordActions(),
                     ViewAction::make(),
                     EditAction::make(),
                     DeleteAction::make()
@@ -258,5 +224,68 @@ class TimeOffResource extends Resource
             'edit'   => EditTimeOff::route('/{record}/edit'),
             'view'   => ViewTimeOff::route('/{record}'),
         ];
+    }
+
+    /**
+     * @return array<int, Action>
+     */
+    public static function leaveApprovalRecordActions(): array
+    {
+        return [
+            Action::make('approve')
+                ->icon('heroicon-o-check-circle')
+                ->color('success')
+                ->authorize('approve')
+                ->visible(fn (Leave $record): bool => static::leaveApprovalService()->canApprove(static::currentUser(), $record))
+                ->action(function (Leave $record): void {
+                    static::leaveApprovalService()->approve($record, static::currentUser());
+
+                    Notification::make()
+                        ->success()
+                        ->title(__('time-off::filament/clusters/management/resources/time-off.table.actions.approve.notification.title'))
+                        ->body(__('time-off::filament/clusters/management/resources/time-off.table.actions.approve.notification.body'))
+                        ->send();
+                })
+                ->label(function (Leave $record): string {
+                    $state = $record->state instanceof State ? $record->state : State::from((string) $record->state);
+
+                    if ($state === State::VALIDATE_ONE) {
+                        return __('time-off::filament/clusters/management/resources/time-off.table.actions.approve.title.validate');
+                    }
+
+                    return __('time-off::filament/clusters/management/resources/time-off.table.actions.approve.title.approve');
+                }),
+            Action::make('refuse')
+                ->icon('heroicon-o-x-circle')
+                ->color('danger')
+                ->authorize('refuse')
+                ->visible(fn (Leave $record): bool => static::leaveApprovalService()->canRefuse(static::currentUser(), $record))
+                ->action(function (Leave $record): void {
+                    static::leaveApprovalService()->refuse($record, static::currentUser());
+
+                    Notification::make()
+                        ->success()
+                        ->title(__('time-off::filament/clusters/management/resources/time-off.table.actions.refused.notification.title'))
+                        ->body(__('time-off::filament/clusters/management/resources/time-off.table.actions.refused.notification.body'))
+                        ->send();
+                })
+                ->label(__('time-off::filament/clusters/management/resources/time-off.table.actions.refused.title')),
+        ];
+    }
+
+    protected static function leaveApprovalService(): LeaveApprovalService
+    {
+        return app(LeaveApprovalService::class);
+    }
+
+    protected static function currentUser(): User
+    {
+        $user = Auth::user();
+
+        if (! $user instanceof User) {
+            throw new \RuntimeException('Authenticated user is required.');
+        }
+
+        return $user;
     }
 }
