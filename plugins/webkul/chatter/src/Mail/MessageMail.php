@@ -4,11 +4,11 @@ namespace Webkul\Chatter\Mail;
 
 use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;
-use Illuminate\Mail\Mailables\Address;
 use Illuminate\Mail\Mailables\Attachment;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
+use Webkul\Support\Mail\PayloadEnvelope;
 
 class MessageMail extends Mailable
 {
@@ -32,10 +32,7 @@ class MessageMail extends Mailable
      */
     public function envelope(): Envelope
     {
-        return new Envelope(
-            subject: $this->payload['subject'],
-            from: new Address($this->payload['from']['address'], '"'.addslashes($this->payload['from']['name']).'"'),
-        );
+        return PayloadEnvelope::make($this->payload['subject'], $this->payload);
     }
 
     /**
