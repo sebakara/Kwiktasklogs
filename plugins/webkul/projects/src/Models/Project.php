@@ -136,6 +136,11 @@ class Project extends Model implements Sortable
         return $this->hasMany(TaskStage::class);
     }
 
+    public function members(): BelongsToMany
+    {
+        return $this->belongsToMany(User::class, 'projects_project_members', 'project_id', 'user_id');
+    }
+
     public function favoriteUsers(): BelongsToMany
     {
         return $this->belongsToMany(User::class, 'projects_user_project_favorites', 'project_id', 'user_id');

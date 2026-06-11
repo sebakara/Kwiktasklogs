@@ -28,6 +28,7 @@ use Webkul\Support\SupportServiceProvider;
 use Webkul\TableViews\TableViewsServiceProvider;
 use Webkul\TimeOff\TimeOffServiceProvider;
 use Webkul\Timesheet\TimesheetServiceProvider;
+use Webkul\Performance\PerformanceServiceProvider;
 use Webkul\Website\WebsiteServiceProvider;
 
 return [
@@ -59,5 +60,6 @@ return [
     FullCalendarServiceProvider::class,
     TimesheetServiceProvider::class,
     WebsiteServiceProvider::class,
+    PerformanceServiceProvider::class,
     PluginManagerServiceProvider::class,
 ];

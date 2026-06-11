@@ -1,0 +1,26 @@
+{
+    "name": "webkul/performance",
+    "description": "OKR and KPI performance management",
+    "version": "1.0.0",
+    "authors": [
+        {
+            "name": "KwikERP",
+            "email": "support@kwikerp.com"
+        }
+    ],
+    "extra": {
+        "laravel": {
+            "providers": [
+                "Webkul\\Performance\\PerformanceServiceProvider"
+            ],
+            "aliases": {}
+        }
+    },
+    "autoload": {
+        "psr-4": {
+            "Webkul\\Performance\\": "src/",
+            "Webkul\\Performance\\Database\\Factories\\": "database/factories/",
+            "Webkul\\Performance\\Database\\Seeders\\": "database/seeders/"
+        }
+    }
+}

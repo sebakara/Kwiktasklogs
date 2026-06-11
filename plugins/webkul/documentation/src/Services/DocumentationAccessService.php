@@ -32,6 +32,11 @@ class DocumentationAccessService
             return DocumentationHubRole::Editor;
         }
 
+        // Project documentation assignees display as Editor even without a global editor permission
+        if (DocumentationProjectIntegration::assigneeHasAnyProject($user)) {
+            return DocumentationHubRole::Editor;
+        }
+
         if ($this->isViewer($user)) {
             return DocumentationHubRole::Viewer;
         }
@@ -223,6 +228,12 @@ class DocumentationAccessService
             return true;
         }
 
+        // Project documentation assignees can edit pages in their assigned project
+        // regardless of global editor permission — checked before the isEditor gate
+        if ($this->isProjectDocumentationAssignee($user, $page->project_id)) {
+            return true;
+        }
+
         if (! $this->isEditor($user)) {
             return false;
         }
@@ -243,7 +254,7 @@ class DocumentationAccessService
             return true;
         }
 
-        return $this->isProjectDocumentationAssignee($user, $page->project_id);
+        return false;
     }
 
     public function canCreatePageInSpace(User $user, DocumentationSpace $space): bool

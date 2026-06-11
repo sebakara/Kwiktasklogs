@@ -56,6 +56,7 @@ use Webkul\Project\Filament\Resources\ProjectResource\Pages\CreateProject;
 use Webkul\Project\Filament\Resources\ProjectResource\Pages\EditProject;
 use Webkul\Project\Filament\Resources\ProjectResource\Pages\ListProjects;
 use Webkul\Project\Filament\Resources\ProjectResource\Pages\ManageMilestones;
+use Webkul\Project\Filament\Resources\ProjectResource\Pages\KanbanBoard;
 use Webkul\Project\Filament\Resources\ProjectResource\Pages\ManageTasks;
 use Webkul\Project\Filament\Resources\ProjectResource\Pages\ViewProject;
 use Webkul\Project\Filament\Resources\ProjectResource\RelationManagers\MilestonesRelationManager;
@@ -137,6 +138,13 @@ class ProjectResource extends Resource
                                     ->searchable()
                                     ->preload()
                                     ->createOptionForm(fn (Schema $schema) => UserResource::form($schema)),
+                                Select::make('members')
+                                    ->label(__('Project Members'))
+                                    ->relationship('members', 'name')
+                                    ->multiple()
+                                    ->searchable()
+                                    ->preload()
+                                    ->helperText(__('Assign multiple team members to collaborate on this project.')),
                                 Select::make('documentation_assignee_id')
                                     ->label(__('projects::filament/resources/project.form.sections.additional.fields.documentation-assignee'))
                                     ->helperText(__('projects::filament/resources/project.form.sections.additional.fields.documentation-assignee-helper-text'))
@@ -699,6 +707,7 @@ class ProjectResource extends Resource
             ViewProject::class,
             EditProject::class,
             ManageTasks::class,
+            KanbanBoard::class,
             ManageMilestones::class,
         ]);
     }
@@ -727,6 +736,7 @@ class ProjectResource extends Resource
             'view'       => ViewProject::route('/{record}'),
             'milestones' => ManageMilestones::route('/{record}/milestones'),
             'tasks'      => ManageTasks::route('/{record}/tasks'),
+            'kanban'     => KanbanBoard::route('/{record}/kanban'),
         ];
     }
 }
