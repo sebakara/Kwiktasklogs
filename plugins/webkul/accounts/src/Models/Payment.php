@@ -64,6 +64,12 @@ class Payment extends Model
         'source_payment_id',
         'payment_token_id',
         'receipt_attachment',
+        'chart_of_account_id',
+        'project_id',
+        'purposes',
+        'prepared_by_id',
+        'verified_by_id',
+        'approved_by_id',
     ];
 
     protected $casts = [
@@ -169,6 +175,31 @@ class Payment extends Model
     public function paymentToken()
     {
         return $this->belongsTo(PaymentToken::class, 'payment_token_id');
+    }
+
+    public function chartOfAccount()
+    {
+        return $this->belongsTo(Account::class, 'chart_of_account_id');
+    }
+
+    public function project()
+    {
+        return $this->belongsTo(\Webkul\Project\Models\Project::class, 'project_id');
+    }
+
+    public function preparedBy()
+    {
+        return $this->belongsTo(User::class, 'prepared_by_id');
+    }
+
+    public function verifiedBy()
+    {
+        return $this->belongsTo(User::class, 'verified_by_id');
+    }
+
+    public function approvedBy()
+    {
+        return $this->belongsTo(User::class, 'approved_by_id');
     }
 
     public function invoices()

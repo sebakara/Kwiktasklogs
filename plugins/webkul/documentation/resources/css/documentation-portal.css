@@ -3787,3 +3787,88 @@ body:has(.doc-hub-page) .fi-main-ctn {
 body:has(.doc-hub-page) .fi-main-ctn-sidebar-open {
     padding-inline-start: 0 !important;
 }
+
+/* ── Quill WYSIWYG editor ─────────────────────────────── */
+.doc-quill-toolbar {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0;
+    padding: 0.375rem 0.75rem;
+    border-bottom: 1px solid rgb(229 231 235);
+    background-color: rgb(249 250 251);
+    border-radius: 0.5rem 0.5rem 0 0;
+}
+.dark .doc-quill-toolbar {
+    border-bottom-color: rgb(31 41 55);
+    background-color: rgb(15 23 42 / 0.6);
+}
+.doc-quill-toolbar .ql-formats { margin-right: 0.5rem; }
+.doc-quill-toolbar button.ql-bold,
+.doc-quill-toolbar button.ql-italic,
+.doc-quill-toolbar button.ql-underline,
+.doc-quill-toolbar button.ql-blockquote,
+.doc-quill-toolbar button.ql-code-block,
+.doc-quill-toolbar button.ql-link,
+.doc-quill-toolbar button.ql-list,
+.doc-quill-toolbar button.ql-clean {
+    width: 28px;
+    height: 28px;
+    padding: 3px;
+    border-radius: 4px;
+}
+.doc-quill-toolbar button:hover { background-color: rgb(229 231 235) !important; }
+.doc-quill-toolbar .ql-stroke { stroke: rgb(75 85 99) !important; }
+.doc-quill-toolbar .ql-fill   { fill:   rgb(75 85 99) !important; }
+.dark .doc-quill-toolbar .ql-stroke { stroke: rgb(209 213 219) !important; }
+.dark .doc-quill-toolbar .ql-fill   { fill:   rgb(209 213 219) !important; }
+.doc-quill-toolbar .ql-picker-label { color: rgb(75 85 99); }
+.dark .doc-quill-toolbar .ql-picker-label { color: rgb(209 213 219); }
+.doc-quill-toolbar .ql-picker-options {
+    background: #fff;
+    border: 1px solid rgb(229 231 235);
+    border-radius: 6px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    z-index: 100;
+}
+.doc-quill-upload-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    padding: 3px;
+    border: none;
+    border-radius: 4px;
+    background: transparent;
+    color: rgb(75 85 99);
+    cursor: pointer;
+    vertical-align: middle;
+}
+.doc-quill-upload-btn:hover { background-color: rgb(229 231 235); }
+.doc-quill-upload-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.dark .doc-quill-upload-btn { color: rgb(209 213 219); }
+.dark .doc-quill-upload-btn:hover { background-color: rgb(31 41 55); }
+.doc-quill-editor { min-height: 28rem; font-size: 0.9375rem; line-height: 1.75; }
+.doc-quill-editor .ql-editor {
+    min-height: 28rem;
+    padding: 1.25rem 1.5rem;
+    font-size: 0.9375rem;
+    font-family: ui-sans-serif, system-ui, sans-serif;
+    line-height: 1.75;
+    color: rgb(55 65 81);
+}
+.dark .doc-quill-editor .ql-editor { color: rgb(209 213 219); }
+.doc-quill-editor .ql-editor h2 { font-size: 1.375rem; font-weight: 700; margin: 1rem 0 0.5rem; }
+.doc-quill-editor .ql-editor h3 { font-size: 1.125rem; font-weight: 600; margin: 0.875rem 0 0.375rem; }
+.doc-quill-editor .ql-editor p  { margin: 0 0 0.5rem; }
+.doc-quill-editor .ql-editor ul,
+.doc-quill-editor .ql-editor ol { padding-left: 1.5rem; margin: 0 0 0.5rem; }
+.doc-quill-editor .ql-editor img { max-width: 100%; height: auto; border-radius: 4px; margin: 0.5rem 0; }
+.doc-quill-editor .ql-editor blockquote {
+    border-left: 4px solid rgb(209 213 219);
+    padding-left: 1rem;
+    color: rgb(107 114 128);
+    margin: 0.5rem 0;
+}
+.doc-quill-editor.ql-container.ql-snow { border: none !important; }

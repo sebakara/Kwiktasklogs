@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 
 namespace App\Policies;
 
@@ -9,6 +9,15 @@ class AddressPolicy
 {
     use HandlesAuthorization;
     
+
+    public function before(AuthUser $authUser, string $ability): ?bool
+    {
+        if ($authUser->roles()->whereIn('name', ['admin', 'super_admin'])->exists()) {
+            return true;
+        }
+
+        return null;
+    }
     public function viewAny(AuthUser $authUser): bool
     {
         return $authUser->can('view_any_partner_address');

@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 
 declare(strict_types=1);
 
@@ -12,7 +12,16 @@ class TeamPolicy
 {
     use HandlesAuthorization;
     
-    public function viewAny(AuthUser $authUser, Team $team): bool
+
+    public function before(AuthUser $authUser, string $ability): ?bool
+    {
+        if ($authUser->roles()->whereIn('name', ['admin', 'super_admin'])->exists()) {
+            return true;
+        }
+
+        return null;
+    }
+    public function viewAny(AuthUser $authUser): bool
     {
         return $authUser->can('view_any_security_team');
     }
@@ -37,7 +46,7 @@ class TeamPolicy
         return $authUser->can('delete_security_team');
     }
 
-    public function deleteAny(AuthUser $authUser, Team $team): bool
+    public function deleteAny(AuthUser $authUser): bool
     {
         return $authUser->can('delete_any_security_team');
     }

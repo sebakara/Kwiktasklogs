@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 
 declare(strict_types=1);
 
@@ -12,7 +12,16 @@ class PluginPolicy
 {
     use HandlesAuthorization;
     
-    public function viewAny(AuthUser $authUser, Plugin $plugin): bool
+
+    public function before(AuthUser $authUser, string $ability): ?bool
+    {
+        if ($authUser->roles()->whereIn('name', ['admin', 'super_admin'])->exists()) {
+            return true;
+        }
+
+        return null;
+    }
+    public function viewAny(AuthUser $authUser): bool
     {
         return $authUser->can('view_any_plugin_manager_plugin');
     }
@@ -37,7 +46,7 @@ class PluginPolicy
         return $authUser->can('delete_plugin_manager_plugin');
     }
 
-    public function deleteAny(AuthUser $authUser, Plugin $plugin): bool
+    public function deleteAny(AuthUser $authUser): bool
     {
         return $authUser->can('delete_any_plugin_manager_plugin');
     }

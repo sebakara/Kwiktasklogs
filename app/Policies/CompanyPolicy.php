@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 
 declare(strict_types=1);
 
@@ -12,7 +12,16 @@ class CompanyPolicy
 {
     use HandlesAuthorization;
     
-    public function viewAny(AuthUser $authUser, Company $company): bool
+
+    public function before(AuthUser $authUser, string $ability): ?bool
+    {
+        if ($authUser->roles()->whereIn('name', ['admin', 'super_admin'])->exists()) {
+            return true;
+        }
+
+        return null;
+    }
+    public function viewAny(AuthUser $authUser): bool
     {
         return $authUser->can('view_any_support_company');
     }
@@ -37,7 +46,7 @@ class CompanyPolicy
         return $authUser->can('delete_support_company');
     }
 
-    public function deleteAny(AuthUser $authUser, Company $company): bool
+    public function deleteAny(AuthUser $authUser): bool
     {
         return $authUser->can('delete_any_support_company');
     }
@@ -47,7 +56,7 @@ class CompanyPolicy
         return $authUser->can('restore_support_company');
     }
 
-    public function restoreAny(AuthUser $authUser, Company $company): bool
+    public function restoreAny(AuthUser $authUser): bool
     {
         return $authUser->can('restore_any_support_company');
     }
@@ -57,7 +66,7 @@ class CompanyPolicy
         return $authUser->can('force_delete_support_company');
     }
 
-    public function forceDeleteAny(AuthUser $authUser, Company $company): bool
+    public function forceDeleteAny(AuthUser $authUser): bool
     {
         return $authUser->can('force_delete_any_support_company');
     }

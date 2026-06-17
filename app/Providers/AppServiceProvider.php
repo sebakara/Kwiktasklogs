@@ -24,6 +24,12 @@ class AppServiceProvider extends ServiceProvider
     {
         Gate::policy(Document::class, DocumentPolicy::class);
 
+        Gate::before(function ($user, $ability) {
+            if (method_exists($user, 'roles') && $user->roles()->whereIn('name', ['admin', 'super_admin'])->exists()) {
+                return true;
+            }
+        });
+
         if (app()->environment('production')) {
             URL::forceScheme('https');
         }

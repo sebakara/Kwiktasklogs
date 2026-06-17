@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 
 declare(strict_types=1);
 
@@ -12,7 +12,16 @@ class UOMCategoryPolicy
 {
     use HandlesAuthorization;
     
-    public function viewAny(AuthUser $authUser, UOMCategory $uOMCategory): bool
+
+    public function before(AuthUser $authUser, string $ability): ?bool
+    {
+        if ($authUser->roles()->whereIn('name', ['admin', 'super_admin'])->exists()) {
+            return true;
+        }
+
+        return null;
+    }
+    public function viewAny(AuthUser $authUser): bool
     {
         return $authUser->can('view_any_support_u::o::m::category');
     }
@@ -37,7 +46,7 @@ class UOMCategoryPolicy
         return $authUser->can('delete_support_u::o::m::category');
     }
 
-    public function deleteAny(AuthUser $authUser, UOMCategory $uOMCategory): bool
+    public function deleteAny(AuthUser $authUser): bool
     {
         return $authUser->can('delete_any_support_u::o::m::category');
     }

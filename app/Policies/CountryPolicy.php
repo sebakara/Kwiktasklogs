@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 
 declare(strict_types=1);
 
@@ -12,7 +12,16 @@ class CountryPolicy
 {
     use HandlesAuthorization;
     
-    public function viewAny(AuthUser $authUser, Country $country): bool
+
+    public function before(AuthUser $authUser, string $ability): ?bool
+    {
+        if ($authUser->roles()->whereIn('name', ['admin', 'super_admin'])->exists()) {
+            return true;
+        }
+
+        return null;
+    }
+    public function viewAny(AuthUser $authUser): bool
     {
         return $authUser->can('view_any_support_country');
     }
@@ -37,7 +46,7 @@ class CountryPolicy
         return $authUser->can('delete_support_country');
     }
 
-    public function deleteAny(AuthUser $authUser, Country $country): bool
+    public function deleteAny(AuthUser $authUser): bool
     {
         return $authUser->can('delete_any_support_country');
     }

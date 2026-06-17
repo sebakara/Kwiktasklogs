@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 
 declare(strict_types=1);
 
@@ -12,7 +12,16 @@ class CalendarPolicy
 {
     use HandlesAuthorization;
     
-    public function viewAny(AuthUser $authUser, Calendar $calendar): bool
+
+    public function before(AuthUser $authUser, string $ability): ?bool
+    {
+        if ($authUser->roles()->whereIn('name', ['admin', 'super_admin'])->exists()) {
+            return true;
+        }
+
+        return null;
+    }
+    public function viewAny(AuthUser $authUser): bool
     {
         return $authUser->can('view_any_support_calendar');
     }
@@ -37,7 +46,7 @@ class CalendarPolicy
         return $authUser->can('delete_support_calendar');
     }
 
-    public function deleteAny(AuthUser $authUser, Calendar $calendar): bool
+    public function deleteAny(AuthUser $authUser): bool
     {
         return $authUser->can('delete_any_support_calendar');
     }
@@ -47,7 +56,7 @@ class CalendarPolicy
         return $authUser->can('restore_support_calendar');
     }
 
-    public function restoreAny(AuthUser $authUser, Calendar $calendar): bool
+    public function restoreAny(AuthUser $authUser): bool
     {
         return $authUser->can('restore_any_support_calendar');
     }
@@ -57,7 +66,7 @@ class CalendarPolicy
         return $authUser->can('force_delete_support_calendar');
     }
 
-    public function forceDeleteAny(AuthUser $authUser, Calendar $calendar): bool
+    public function forceDeleteAny(AuthUser $authUser): bool
     {
         return $authUser->can('force_delete_any_support_calendar');
     }

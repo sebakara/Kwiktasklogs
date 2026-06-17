@@ -13,6 +13,10 @@ Route::get('/employee-documents/{document}/verify-signature', EmployeeDocumentSi
     ->name('employee-documents.verify-signature');
 
 Route::middleware(['web', 'auth'])->group(function (): void {
+    Route::get('/payment-voucher/{payment}/print', [\App\Http\Controllers\Invoice\PaymentVoucherController::class, 'print'])
+        ->name('payment-voucher.print');
+    Route::post('/documentation/upload', [\App\Http\Controllers\Documentation\UploadController::class, 'upload'])
+        ->name('documentation.upload');
     Route::prefix('hr/documents')
         ->name('hr.documents.')
         ->group(function (): void {

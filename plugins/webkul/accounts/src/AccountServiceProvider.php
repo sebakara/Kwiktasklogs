@@ -90,6 +90,7 @@ class AccountServiceProvider extends PackageServiceProvider
                 '2026_02_25_044931_alter_accounts_full_reconciles_table',
                 '2026_03_03_120000_alter_accounts_journals_bank_account_foreign_key',
                 '2026_04_28_180000_add_receipt_attachment_to_accounts_payments_tables',
+                '2026_06_16_000001_add_payment_voucher_fields_to_accounts_payments_table',
             ])
             ->runsMigrations()
             ->hasSettings([

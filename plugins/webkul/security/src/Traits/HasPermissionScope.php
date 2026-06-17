@@ -7,6 +7,18 @@ use Illuminate\Support\Facades\DB;
 
 trait HasPermissionScope
 {
+    /** Per-request cache: 'table.column' => bool */
+    private static array $columnExistsCache = [];
+
+    private function hasTableColumn(string $table, string $column): bool
+    {
+        $key = $table . '.' . $column;
+        if (! array_key_exists($key, static::$columnExistsCache)) {
+            static::$columnExistsCache[$key] = $this->getConnection()->getSchemaBuilder()->hasColumn($table, $column);
+        }
+        return static::$columnExistsCache[$key];
+    }
+
     protected ?string $ownerColumn = 'creator_id';
 
     protected ?string $assignmentColumn = 'user_id';
@@ -82,7 +94,7 @@ trait HasPermissionScope
         }
 
         $documentationAssigneeColumn = 'documentation_assignee_id';
-        $hasDocumentationAssigneeColumn = $this->getConnection()->getSchemaBuilder()->hasColumn(
+        $hasDocumentationAssigneeColumn = $this->hasTableColumn(
             $this->getTable(),
             $documentationAssigneeColumn,
         );
@@ -94,7 +106,7 @@ trait HasPermissionScope
 
             if (
                 $assignmentColumn &&
-                $this->getConnection()->getSchemaBuilder()->hasColumn($this->getTable(), $assignmentColumn)
+                $this->hasTableColumn($this->getTable(), $assignmentColumn)
             ) {
                 $subQuery->orWhereIn($assignmentColumn, $userIds);
             }

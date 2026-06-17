@@ -1,4 +1,80 @@
 <x-documentation::filament.hub.layout>
+    {{-- Quill — synchronous load so Quill is ready before Alpine initialises --}}
+    @once
+    <link rel="stylesheet" href="{{ asset('js/quill/quill.snow.css') }}">
+    <script src="{{ asset('js/quill/quill.min.js') }}"></script>
+    <script>
+    document.addEventListener('alpine:init', function () {
+        Alpine.data('docQuillEditor', function (opts) {
+            return {
+                quill: null,
+                busy: false,
+                uploadUrl: opts.uploadUrl,
+                csrfToken: opts.csrfToken,
+                initialContent: opts.initialContent,
+
+                init: function () {
+                    var self = this;
+                    if (typeof Quill === 'undefined') { console.error('Quill not loaded'); return; }
+
+                    self.quill = new Quill(self.$refs.quillBox, {
+                        theme: 'snow',
+                        modules: {
+                            toolbar: { container: '#doc-quill-toolbar', handlers: {} }
+                        }
+                    });
+
+                    if (self.initialContent) {
+                        self.quill.root.innerHTML = self.initialContent;
+                    }
+
+                    /* Sync Quill → hidden textarea. Livewire reads wire:model="pageContent"
+                       from that textarea on every request, so no capture-listener tricks needed. */
+                    self.quill.on('text-change', function () {
+                        var html = self.quill.root.innerHTML;
+                        var ta = document.getElementById('quill-content-sync');
+                        if (ta) {
+                            ta.value = html === '<p><br></p>' ? '' : html;
+                            ta.dispatchEvent(new Event('input'));
+                        }
+                    });
+                },
+
+                uploadFile: function (file) {
+                    var self = this;
+                    self.busy = true;
+                    var fd = new FormData();
+                    fd.append('file', file);
+                    fd.append('_token', self.csrfToken);
+                    fetch(self.uploadUrl, {
+                        method: 'POST',
+                        body: fd,
+                        headers: { 'X-CSRF-TOKEN': self.csrfToken, 'Accept': 'application/json' }
+                    })
+                    .then(function (r) {
+                        if (!r.ok) return r.text().then(function (t) { throw new Error('HTTP ' + r.status + ': ' + t.substring(0, 200)); });
+                        return r.json();
+                    })
+                    .then(function (data) {
+                        self.quill.focus();
+                        var sel = self.quill.getSelection() || { index: self.quill.getLength(), length: 0 };
+                        if (data.is_image) {
+                            self.quill.insertEmbed(sel.index, 'image', data.url, 'user');
+                            self.quill.setSelection(sel.index + 1);
+                        } else {
+                            self.quill.insertText(sel.index, data.name, 'link', data.url, 'user');
+                            self.quill.setSelection(sel.index + data.name.length + 1);
+                        }
+                    })
+                    .catch(function (err) { alert('Upload failed: ' + err.message); })
+                    .finally(function () { self.busy = false; });
+                }
+            };
+        });
+    });
+    </script>
+    @endonce
+
     <div
         wire:key="doc-editor-{{ $isCreating ? 'create' : $record?->id }}"
         class="doc-editor-frame"
@@ -138,58 +214,72 @@
                     ></textarea>
                 </div>
 
-                {{-- Content editor --}}
+                {{-- Content editor (Quill WYSIWYG) --}}
                 <div class="doc-editor-field doc-editor-field--content">
                     <label class="doc-editor-label">
                         {{ __('documentation::filament/hub.pages.fields.content') }}
                     </label>
 
+                    {{-- Hidden textarea: Livewire reads pageContent from here on every request.
+                         Quill dispatches an 'input' event on it after each change, so this
+                         stays in sync without any capture-listener or $wire.set() timing hacks. --}}
+                    <textarea id="quill-content-sync" wire:model="pageContent"
+                              style="display:none" aria-hidden="true"></textarea>
+
                     <div
-                        x-data="{
-                            wrap(before, after) {
-                                const ta = this.$refs.editor;
-                                const s = ta.selectionStart, e = ta.selectionEnd;
-                                ta.setRangeText(before + ta.value.substring(s, e) + after, s, e, 'end');
-                                ta.dispatchEvent(new Event('input', { bubbles: true }));
-                                ta.focus();
-                            },
-                            insertLink() {
-                                const url = window.prompt({{ Js::from(__('documentation::filament/hub.pages.editor.link_prompt')) }});
-                                if (!url) return;
-                                this.wrap('<a href=\u0022' + url + '\u0022>', '<\/a>');
-                            },
-                        }"
+                        wire:ignore
+                        x-data="docQuillEditor({
+                            uploadUrl: {{ Js::from(route('documentation.upload')) }},
+                            csrfToken: {{ Js::from(csrf_token()) }},
+                            initialContent: @js($pageContent)
+                        })"
                         class="doc-editor-content-wrap"
                     >
-                        <div class="doc-editor-toolbar">
-                            <button type="button" x-on:click="wrap('<strong>','<\/strong>')" class="doc-editor-tb-btn doc-editor-tb-btn--bold" title="Bold">B</button>
-                            <button type="button" x-on:click="wrap('<em>','<\/em>')" class="doc-editor-tb-btn doc-editor-tb-btn--italic" title="Italic">I</button>
-                            <span class="doc-editor-tb-divider"></span>
-                            <button type="button" x-on:click="wrap('<h2>','<\/h2>')" class="doc-editor-tb-btn" title="Heading 2">H2</button>
-                            <button type="button" x-on:click="wrap('<h3>','<\/h3>')" class="doc-editor-tb-btn" title="Heading 3">H3</button>
-                            <span class="doc-editor-tb-divider"></span>
-                            <button type="button" x-on:click="wrap('<ul>\n  <li>','<\/li>\n<\/ul>')" class="doc-editor-tb-btn" title="Bullet list">
-                                <x-filament::icon icon="heroicon-o-list-bullet" class="h-3.5 w-3.5" />
-                            </button>
-                            <button type="button" x-on:click="wrap('<ol>\n  <li>','<\/li>\n<\/ol>')" class="doc-editor-tb-btn" title="Numbered list">
-                                <x-filament::icon icon="heroicon-o-numbered-list" class="h-3.5 w-3.5" />
-                            </button>
-                            <button type="button" x-on:click="wrap('<p>','<\/p>')" class="doc-editor-tb-btn" title="Paragraph">¶</button>
-                            <button type="button" x-on:click="wrap('<code>','<\/code>')" class="doc-editor-tb-btn doc-editor-tb-btn--code" title="Inline code">&lt;/&gt;</button>
-                            <button type="button" x-on:click="insertLink()" class="doc-editor-tb-btn" title="Insert link">
-                                <x-filament::icon icon="heroicon-o-link" class="h-3.5 w-3.5" />
-                            </button>
+                        {{-- Quill toolbar --}}
+                        <div id="doc-quill-toolbar" class="doc-quill-toolbar">
+                            <span class="ql-formats">
+                                <button class="ql-bold"      title="Bold"></button>
+                                <button class="ql-italic"    title="Italic"></button>
+                                <button class="ql-underline" title="Underline"></button>
+                            </span>
+                            <span class="ql-formats">
+                                <select class="ql-header" title="Heading">
+                                    <option value="2">Heading 2</option>
+                                    <option value="3">Heading 3</option>
+                                    <option selected></option>
+                                </select>
+                            </span>
+                            <span class="ql-formats">
+                                <button class="ql-list" value="bullet"  title="Bullet list"></button>
+                                <button class="ql-list" value="ordered" title="Numbered list"></button>
+                            </span>
+                            <span class="ql-formats">
+                                <button class="ql-blockquote"  title="Quote"></button>
+                                <button class="ql-code-block"  title="Code block"></button>
+                            </span>
+                            <span class="ql-formats">
+                                <button class="ql-link"   title="Insert link"></button>
+                                {{-- Hidden file inputs live inside wire:ignore so Livewire never replaces them --}}
+                                <input type="file" id="doc-img-input" accept="image/*" style="display:none"
+                                    x-on:change="if($event.target.files[0]){ uploadFile($event.target.files[0]); $event.target.value=''; }">
+                                <label for="doc-img-input" class="doc-quill-upload-btn" title="Insert image"
+                                    x-bind:style="busy ? 'pointer-events:none;opacity:0.5;' : ''">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15">
+                                        <rect x="3" y="3" width="18" height="18" rx="2"/>
+                                        <circle cx="8.5" cy="8.5" r="1.5"/>
+                                        <polyline points="21 15 16 10 5 21"/>
+                                    </svg>
+                                </label>
+                            </span>
+                            <span class="ql-formats">
+                                <button class="ql-clean" title="Clear formatting"></button>
+                            </span>
+                            <span x-show="busy" style="font-size:11px;color:#6b7280;padding-left:8px;line-height:24px;">Uploading…</span>
                         </div>
 
-                        <textarea
-                            x-ref="editor"
-                            wire:model="pageContent"
-                            rows="24"
-                            placeholder="{{ __('documentation::filament/hub.pages.editor.content_placeholder') }}"
-                            class="doc-editor-textarea"
-                        ></textarea>
+                        {{-- Quill editor mount point --}}
+                        <div x-ref="quillBox" class="doc-quill-editor"></div>
 
-                        <p class="doc-editor-hint">{{ __('documentation::filament/hub.pages.editor.hint') }}</p>
                     </div>
 
                     @error('pageContent')

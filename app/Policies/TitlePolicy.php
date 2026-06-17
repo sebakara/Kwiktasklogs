@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 
 declare(strict_types=1);
 
@@ -12,7 +12,16 @@ class TitlePolicy
 {
     use HandlesAuthorization;
     
-    public function viewAny(AuthUser $authUser, Title $title): bool
+
+    public function before(AuthUser $authUser, string $ability): ?bool
+    {
+        if ($authUser->roles()->whereIn('name', ['admin', 'super_admin'])->exists()) {
+            return true;
+        }
+
+        return null;
+    }
+    public function viewAny(AuthUser $authUser): bool
     {
         return $authUser->can('view_any_partner_title');
     }
@@ -37,7 +46,7 @@ class TitlePolicy
         return $authUser->can('delete_partner_title');
     }
 
-    public function deleteAny(AuthUser $authUser, Title $title): bool
+    public function deleteAny(AuthUser $authUser): bool
     {
         return $authUser->can('delete_any_partner_title');
     }

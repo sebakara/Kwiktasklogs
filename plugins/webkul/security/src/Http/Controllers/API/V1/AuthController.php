@@ -27,9 +27,6 @@ class AuthController extends Controller
     #[Response(status: 401, description: 'Invalid credentials', content: '{"message": "The provided credentials are incorrect."}')]
     public function login(Request $request)
     {
-
-        echo 'Ndahagera hano';
-        exit;
         $request->validate([
             'email'    => 'required|email',
             'password' => 'required',

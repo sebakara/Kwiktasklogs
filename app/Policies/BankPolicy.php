@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 
 declare(strict_types=1);
 
@@ -12,7 +12,16 @@ class BankPolicy
 {
     use HandlesAuthorization;
     
-    public function viewAny(AuthUser $authUser, Bank $bank): bool
+
+    public function before(AuthUser $authUser, string $ability): ?bool
+    {
+        if ($authUser->roles()->whereIn('name', ['admin', 'super_admin'])->exists()) {
+            return true;
+        }
+
+        return null;
+    }
+    public function viewAny(AuthUser $authUser): bool
     {
         return $authUser->can('view_any_support_bank');
     }
@@ -37,7 +46,7 @@ class BankPolicy
         return $authUser->can('delete_support_bank');
     }
 
-    public function deleteAny(AuthUser $authUser, Bank $bank): bool
+    public function deleteAny(AuthUser $authUser): bool
     {
         return $authUser->can('delete_any_support_bank');
     }
@@ -47,7 +56,7 @@ class BankPolicy
         return $authUser->can('restore_support_bank');
     }
 
-    public function restoreAny(AuthUser $authUser, Bank $bank): bool
+    public function restoreAny(AuthUser $authUser): bool
     {
         return $authUser->can('restore_any_support_bank');
     }
@@ -57,7 +66,7 @@ class BankPolicy
         return $authUser->can('force_delete_support_bank');
     }
 
-    public function forceDeleteAny(AuthUser $authUser, Bank $bank): bool
+    public function forceDeleteAny(AuthUser $authUser): bool
     {
         return $authUser->can('force_delete_any_support_bank');
     }

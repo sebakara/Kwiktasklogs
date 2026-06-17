@@ -25,9 +25,17 @@ final class AdminLandingUrl
         }
 
         if ($user->can(self::PROJECT_DASHBOARD_PERMISSION)) {
-            return ProjectDashboard::getUrl();
+            try {
+                return ProjectDashboard::getUrl();
+            } catch (\Throwable) {
+                // Project dashboard route not registered — fall through to profile
+            }
         }
 
-        return Profile::getUrl();
+        try {
+            return Profile::getUrl();
+        } catch (\Throwable) {
+            return Filament::getUrl();
+        }
     }
 }
