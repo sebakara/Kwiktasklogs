@@ -89,6 +89,11 @@ class DocumentationAccessService
             return true;
         }
 
+        // Check Shield permissions: update, delete, force delete indicate admin-level access
+        if ($user->can('update_documentation_documentation::article') || $user->can('delete_documentation_documentation::article') || $user->can('force_delete_documentation_documentation::article')) {
+            return true;
+        }
+
         return $user->hasRole($this->roleName('admin'));
     }
 
@@ -102,6 +107,11 @@ class DocumentationAccessService
             return true;
         }
 
+        // Check Shield permissions: create or update indicate editor-level access
+        if ($user->can('create_documentation_documentation::article') || $user->can('update_documentation_documentation::article')) {
+            return true;
+        }
+
         return $user->hasRole($this->roleName('editor'));
     }
 
@@ -112,6 +122,11 @@ class DocumentationAccessService
         }
 
         if ($user->can($this->permission('viewer'))) {
+            return true;
+        }
+
+        // Check Shield permissions: view_any_documentation_documentation::article indicates viewer-level access
+        if ($user->can('view_any_documentation_documentation::article')) {
             return true;
         }
 
