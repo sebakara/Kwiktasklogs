@@ -90,8 +90,12 @@ class DocumentationAccessService
         }
 
         // Check Shield permissions: update, delete, force delete indicate admin-level access
-        if ($user->can('update_documentation_documentation::article') || $user->can('delete_documentation_documentation::article') || $user->can('force_delete_documentation_documentation::article')) {
-            return true;
+        try {
+            if ($user->can('update_documentation_documentation::article') || $user->can('delete_documentation_documentation::article') || $user->can('force_delete_documentation_documentation::article')) {
+                return true;
+            }
+        } catch (\Exception) {
+            // Silently fail if Shield permissions don't exist
         }
 
         return $user->hasRole($this->roleName('admin'));
@@ -108,8 +112,12 @@ class DocumentationAccessService
         }
 
         // Check Shield permissions: create or update indicate editor-level access
-        if ($user->can('create_documentation_documentation::article') || $user->can('update_documentation_documentation::article')) {
-            return true;
+        try {
+            if ($user->can('create_documentation_documentation::article') || $user->can('update_documentation_documentation::article')) {
+                return true;
+            }
+        } catch (\Exception) {
+            // Silently fail if Shield permissions don't exist
         }
 
         return $user->hasRole($this->roleName('editor'));
@@ -126,8 +134,12 @@ class DocumentationAccessService
         }
 
         // Check Shield permissions: view_any_documentation_documentation::article indicates viewer-level access
-        if ($user->can('view_any_documentation_documentation::article')) {
-            return true;
+        try {
+            if ($user->can('view_any_documentation_documentation::article')) {
+                return true;
+            }
+        } catch (\Exception) {
+            // Silently fail if Shield permissions don't exist
         }
 
         return $user->hasRole($this->roleName('viewer'));
