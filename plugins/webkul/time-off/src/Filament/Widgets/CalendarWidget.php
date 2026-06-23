@@ -313,7 +313,7 @@ class CalendarWidget extends FullCalendarWidget
                         'weekend_days'  => $weekendDays,
                         'total_days'    => $totalDays,
                         'description'   => $leave->private_name,
-                        'type'          => $leave->holidayStatus->name,
+                        'type'          => $leave->holidayStatus?->name ?? 'Unknown',
                         'isHalfDay'     => $leave->request_unit_half,
                         'priority'      => $this->getEventPriority($leave->state),
                     ],
