@@ -17,6 +17,7 @@ use Filament\Schemas\Components\Utilities\Set;
 use Illuminate\Support\Facades\Auth;
 use Webkul\Employee\Models\Employee;
 use Webkul\TimeOff\Enums\RequestDateFromPeriod;
+use Webkul\TimeOff\Enums\RequiresAllocation;
 use Webkul\TimeOff\Enums\State;
 use Webkul\TimeOff\Models\Leave;
 use Webkul\TimeOff\Models\LeaveAllocation;
@@ -253,7 +254,7 @@ trait TimeOffHelper
 
         $leaveType = LeaveType::find($leaveTypeId);
 
-        if (! $leaveType || ! $leaveType->requires_allocation) {
+        if (! $leaveType || $leaveType->requires_allocation !== RequiresAllocation::YES->value) {
             return;
         }
 
@@ -298,7 +299,7 @@ trait TimeOffHelper
     {
         $leaveType = LeaveType::find($leaveTypeId);
 
-        if (! $leaveType || ! $leaveType->requires_allocation) {
+        if (! $leaveType || $leaveType->requires_allocation !== RequiresAllocation::YES->value) {
             return [
                 'allocated'           => 0.0,
                 'taken'               => 0.0,

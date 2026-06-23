@@ -287,7 +287,7 @@ class CalendarWidget extends FullCalendarWidget
                 $totalDays = $this->calculateTotalDays($startDate, $endDate);
                 $weekendDays = $totalDays - $businessDays;
 
-                $title = "{$leave->holidayStatus->name} {$leave->user->name}";
+                $title = ($leave->holidayStatus?->name ?? 'Unknown') . ' ' . ($leave->user?->name ?? 'Unknown');
 
                 if ($leave->request_unit_half) {
                     $title .= ' (0.5 day)';
