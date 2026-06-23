@@ -31,13 +31,6 @@ class ListAllocations extends ListRecords
                     State::CONFIRM->value,
                     State::VALIDATE_ONE->value,
                 ])),
-            'second_approval' => PresetView::make(__('time-off::filament/clusters/management/resources/allocation/pages/list-allocations.preset-views.second-approval'))
-                ->icon('heroicon-o-shield-check')
-                ->favorite()
-                ->modifyQueryUsing(fn (Builder $query) => $query->whereIn('state', [
-                    State::CONFIRM->value,
-                    State::VALIDATE_TWO->value,
-                ])),
             'approved' => PresetView::make(__('time-off::filament/clusters/management/resources/allocation/pages/list-allocations.preset-views.approved'))
                 ->icon('heroicon-o-check-badge')
                 ->favorite()
