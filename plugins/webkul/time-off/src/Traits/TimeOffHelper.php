@@ -411,10 +411,10 @@ trait TimeOffHelper
 
         if (! empty($data['employee_id'])) {
             $employee = Employee::find($data['employee_id']);
-            $user = $employee->user;
+            $user = $employee?->user;
         } else {
             $user = Auth::user();
-            $employee = $user->employee;
+            $employee = $user?->employee;
         }
 
         if ($employee) {

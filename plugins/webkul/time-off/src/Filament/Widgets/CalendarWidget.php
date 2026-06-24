@@ -273,8 +273,10 @@ class CalendarWidget extends FullCalendarWidget
         $user = Auth::user();
 
         return Leave::query()
-            ->where('user_id', $user->id)
-            ->orWhere('employee_id', $user?->employee?->id)
+            ->where(function ($query) use ($user) {
+                $query->where('user_id', $user->id)
+                    ->orWhere('employee_id', $user?->employee?->id);
+            })
             ->where('request_date_from', '>=', $fetchInfo['start'])
             ->where('request_date_to', '<=', $fetchInfo['end'])
             ->with('holidayStatus', 'user')
@@ -322,42 +324,45 @@ class CalendarWidget extends FullCalendarWidget
             ->all();
     }
 
-    private function getEventPriority(State $state): string
+    private function getEventPriority($state): string
     {
-        return match ($state) {
-            State::REFUSE              => 'low',
-            State::VALIDATE_ONE        => 'medium',
-            State::CONFIRM             => 'high',
-            State::VALIDATE_TWO        => 'highest',
-            default                    => 'normal'
+        $enum = $state instanceof State ? $state : State::tryFrom((string) $state);
+
+        return match ($enum) {
+            State::REFUSE       => 'low',
+            State::VALIDATE_ONE => 'medium',
+            State::CONFIRM      => 'high',
+            State::VALIDATE_TWO => 'highest',
+            default             => 'normal',
         };
     }
 
-    private function getStateLabel(State $state): string
+    private function getStateLabel($state): string
     {
-        return match ($state) {
-            State::VALIDATE_ONE => State::VALIDATE_ONE->getLabel(),
-            State::VALIDATE_TWO => State::VALIDATE_TWO->getLabel(),
-            State::CONFIRM      => State::CONFIRM->getLabel(),
-            State::REFUSE       => State::REFUSE->getLabel(),
-        };
+        $enum = $state instanceof State ? $state : State::tryFrom((string) $state);
+
+        return $enum?->getLabel() ?? (string) $state;
     }
 
-    private function getStateIcon(State $state): string
+    private function getStateIcon($state): string
     {
-        return match ($state) {
-            State::VALIDATE_ONE        => 'heroicon-o-magnifying-glass',
-            State::VALIDATE_TWO        => 'heroicon-o-check-circle',
-            State::CONFIRM             => 'heroicon-o-clock',
-            State::REFUSE              => 'heroicon-o-x-circle',
-            default                    => 'heroicon-o-document',
+        $enum = $state instanceof State ? $state : State::tryFrom((string) $state);
+
+        return match ($enum) {
+            State::VALIDATE_ONE => 'heroicon-o-magnifying-glass',
+            State::VALIDATE_TWO => 'heroicon-o-check-circle',
+            State::CONFIRM      => 'heroicon-o-clock',
+            State::REFUSE       => 'heroicon-o-x-circle',
+            default             => 'heroicon-o-document',
         };
     }
 
     private function getStateColor($state, $isFilament = false): string
     {
+        $value = $state instanceof State ? $state->value : $state;
+
         if ($isFilament) {
-            return match ($state) {
+            return match ($value) {
                 State::VALIDATE_ONE->value => 'info',
                 State::VALIDATE_TWO->value => 'success',
                 State::CONFIRM->value      => 'warning',
@@ -366,7 +371,7 @@ class CalendarWidget extends FullCalendarWidget
             };
         }
 
-        return match ($state) {
+        return match ($value) {
             State::VALIDATE_ONE->value => '#3B82F6',
             State::VALIDATE_TWO->value => '#10B981',
             State::CONFIRM->value      => '#F59E0B',
