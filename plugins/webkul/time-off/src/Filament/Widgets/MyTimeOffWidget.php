@@ -83,7 +83,7 @@ class MyTimeOffWidget extends BaseWidget
     protected function calculatePendingRequests($employeeId)
     {
         return Leave::where('employee_id', $employeeId)
-            ->where('state', 'confirm')
+            ->where('state', State::CONFIRM->value)
             ->count();
     }
 }

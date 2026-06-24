@@ -53,7 +53,8 @@ class MyTimeOffResource extends Resource
     {
         return TimeOffResource::table($table)
             ->modifyQueryUsing(function ($query) {
-                $query->where('employee_id', Auth::user()?->employee?->id);
+                $employeeId = Auth::user()?->employee?->id;
+                $query->where('employee_id', $employeeId ?? -1);
             });
     }
 

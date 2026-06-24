@@ -54,7 +54,7 @@ class ListAllocations extends ListRecords
             'my_team' => PresetView::make(__('time-off::filament/clusters/management/resources/allocation/pages/list-allocations.preset-views.my-team'))
                 ->icon('heroicon-o-users')
                 ->modifyQueryUsing(function (Builder $query) {
-                    $currentUserId = Auth::user()->id;
+                    $currentUserId = Auth::user()?->id ?? 0;
 
                     return $query->whereHas('employee', function ($query) use ($currentUserId) {
                         $query->where('leave_manager_id', '=', $currentUserId)
@@ -64,7 +64,7 @@ class ListAllocations extends ListRecords
             'my_department' => PresetView::make(__('time-off::filament/clusters/management/resources/allocation/pages/list-allocations.preset-views.my-department'))
                 ->icon('heroicon-o-building-office')
                 ->modifyQueryUsing(function (Builder $query) {
-                    $currentUserId = Auth::user()->id;
+                    $currentUserId = Auth::user()?->id ?? 0;
 
                     return $query->whereHas('employee', function ($query) use ($currentUserId) {
                         $query->whereHas('parent', function ($query) use ($currentUserId) {
