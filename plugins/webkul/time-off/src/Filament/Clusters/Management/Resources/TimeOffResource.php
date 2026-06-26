@@ -108,6 +108,13 @@ class TimeOffResource extends Resource
                 TextColumn::make('state')
                     ->label(__('time-off::filament/clusters/management/resources/time-off.table.columns.status'))
                     ->formatStateUsing(fn (State $state) => $state->getLabel())
+                    ->color(fn (State $state) => match ($state) {
+                        State::CONFIRM      => 'warning',
+                        State::VALIDATE_ONE => 'info',
+                        State::VALIDATE_TWO => 'success',
+                        State::REFUSE       => 'danger',
+                        default             => 'gray',
+                    })
                     ->sortable()
                     ->badge()
                     ->searchable(),

@@ -198,7 +198,7 @@ trait TimeOffHelper
 
     private function handleLeaveOverlap(array &$data, ?int $excludeRecordId = null, ?Action $action = null): void
     {
-        $employee = Employee::find($data['employee_id']);
+        $employee = Employee::find($data['employee_id'] ?? null);
 
         if (! $employee) {
             Notification::make()
@@ -240,7 +240,7 @@ trait TimeOffHelper
 
     private function handleLeaveAllocation(array &$data, ?Action $action = null): void
     {
-        $employee = Employee::find($data['employee_id']);
+        $employee = Employee::find($data['employee_id'] ?? null);
 
         if (! $employee) {
             return;
@@ -408,8 +408,7 @@ trait TimeOffHelper
 
     private function updateEmployeeAndCompanyData(array &$data): void
     {
-
-        if (! empty($data['employee_id'])) {
+        if (! empty($data['employee_id'] ?? null)) {
             $employee = Employee::find($data['employee_id']);
             $user = $employee?->user;
         } else {
@@ -417,9 +416,10 @@ trait TimeOffHelper
             $employee = $user?->employee;
         }
 
-        if ($employee) {
-            $data['employee_id'] = $employee->id;
+        // Always ensure employee_id key exists, even when no employee is found
+        $data['employee_id'] = $employee?->id ?? ($data['employee_id'] ?? null);
 
+        if ($employee) {
             if (empty($data['department_id']) && $employee->department) {
                 $data['department_id'] = $employee->department->id;
             } elseif (empty($data['department_id'])) {

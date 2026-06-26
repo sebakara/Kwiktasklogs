@@ -194,7 +194,14 @@ class AllocationResource extends Resource
                     ->sortable()
                     ->searchable(),
                 TextColumn::make('state')
-                    ->formatStateUsing(fn ($state) => State::options()[$state])
+                    ->formatStateUsing(fn ($state) => State::options()[$state] ?? $state)
+                    ->color(fn ($state) => match ($state) {
+                        State::CONFIRM->value      => 'warning',
+                        State::VALIDATE_ONE->value => 'info',
+                        State::VALIDATE_TWO->value => 'success',
+                        State::REFUSE->value       => 'danger',
+                        default                    => 'gray',
+                    })
                     ->label(__('time-off::filament/clusters/management/resources/allocation.table.columns.status'))
                     ->badge()
                     ->sortable()

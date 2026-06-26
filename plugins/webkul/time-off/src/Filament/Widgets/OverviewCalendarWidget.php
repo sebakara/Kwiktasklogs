@@ -10,7 +10,6 @@ use Filament\Notifications\Notification;
 use Filament\Schemas\Schema;
 use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Facades\Auth;
 use Webkul\FullCalendar\Filament\Actions\CreateAction;
 use Webkul\FullCalendar\Filament\Actions\DeleteAction;
 use Webkul\FullCalendar\Filament\Actions\EditAction;
@@ -148,11 +147,12 @@ class OverviewCalendarWidget extends FullCalendarWidget
 
     public function fetchEvents(array $fetchInfo): array
     {
-        $user = Auth::user();
-
         return Leave::query()
             ->where('request_date_from', '>=', $fetchInfo['start'])
-            ->where('request_date_to', '<=', $fetchInfo['end'])
+            ->where(function ($query) use ($fetchInfo) {
+                $query->where('request_date_to', '<=', $fetchInfo['end'])
+                    ->orWhereNull('request_date_to');
+            })
             ->with('holidayStatus')
             ->get()
             ->map(function (Leave $leave) {
@@ -160,7 +160,7 @@ class OverviewCalendarWidget extends FullCalendarWidget
                     'id'              => $leave->id,
                     'title'           => $leave->holidayStatus?->name,
                     'start'           => $leave->request_date_from,
-                    'end'             => $leave->request_date_to,
+                    'end'             => $leave->request_date_to ? Carbon::parse($leave->request_date_to)->addDay()->toDateString() : null,
                     'allDay'          => true,
                     'backgroundColor' => $leave->holidayStatus?->color,
                     'borderColor'     => $leave->holidayStatus?->color,

@@ -73,41 +73,30 @@ class CalendarWidget extends FullCalendarWidget
                 'startTime'  => '09:00',
                 'endTime'    => '17:00',
             ],
-            'dayCellClassNames' => 'function(info) {
-                var isWeekend = info.date.getDay() === 0 || info.date.getDay() === 6;
-                var isToday = info.date.toDateString() === new Date().toDateString();
-                var classes = [];
-
-                if (isToday) {
-                    classes.push("today-highlight");
-                }
-
-                if (isWeekend) {
-                    classes.push("weekend-day");
-                } else {
-                    classes.push("business-day");
-                }
-
-                return classes;
-            }',
-            'eventClassNames'   => 'function(info) {
-                var classes = ["leave-event", "enhanced-event"];
-
-                if (info.event.extendedProps.state) {
-                    classes.push("state-" + info.event.extendedProps.state);
-                }
-
-                if (info.event.extendedProps.isHalfDay) {
-                    classes.push("half-day-event");
-                }
-
-                if (info.event.extendedProps.priority) {
-                    classes.push("priority-" + info.event.extendedProps.priority);
-                }
-
-                return classes;
-            }',
         ];
+    }
+
+    public function eventClassNames(): string
+    {
+        return <<<'JS'
+        function(info) {
+            var classes = ['leave-event', 'enhanced-event'];
+
+            if (info.event.extendedProps.state) {
+                classes.push('state-' + info.event.extendedProps.state);
+            }
+
+            if (info.event.extendedProps.isHalfDay) {
+                classes.push('half-day-event');
+            }
+
+            if (info.event.extendedProps.priority) {
+                classes.push('priority-' + info.event.extendedProps.priority);
+            }
+
+            return classes;
+        }
+        JS;
     }
 
     public function modalActions(): array

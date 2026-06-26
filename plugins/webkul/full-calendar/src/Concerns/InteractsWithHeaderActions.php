@@ -8,9 +8,18 @@ trait InteractsWithHeaderActions
 {
     protected array $cachedHeaderActions = [];
 
+    public function cacheInteractsWithHeaderActions(): void
+    {
+        if (empty($this->cachedHeaderActions)) {
+            $this->cacheHeaderActions();
+        }
+    }
+
     public function bootedInteractsWithHeaderActions(): void
     {
-        $this->cacheHeaderActions();
+        if (empty($this->cachedHeaderActions)) {
+            $this->cacheHeaderActions();
+        }
     }
 
     protected function cacheHeaderActions(): void

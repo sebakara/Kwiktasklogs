@@ -10,9 +10,20 @@ trait InteractsWithModalActions
 {
     protected array $cachedModalActions = [];
 
+    public function cacheInteractsWithModalActions(): void
+    {
+        if (empty($this->cachedModalActions)) {
+            $this->cacheModalActions();
+            $this->cacheAction($this->viewAction());
+        }
+    }
+
     public function bootedInteractsWithModalActions(): void
     {
-        $this->cacheModalActions();
+        if (empty($this->cachedModalActions)) {
+            $this->cacheModalActions();
+            $this->cacheAction($this->viewAction());
+        }
     }
 
     protected function cacheModalActions(): void
