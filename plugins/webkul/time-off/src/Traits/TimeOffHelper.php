@@ -103,7 +103,7 @@ trait TimeOffHelper
                             $balance = $this->getAvailableLeaveBalance((int) $employeeId, (int) $leaveTypeId);
 
                             if (! $balance['requires_allocation']) {
-                                return 'This leave type does not require allocation.';
+                                return 'No balance limit — you can take this leave type as needed.';
                             }
 
                             $requestedDays = $this->getRequestedDaysFromFormState($get);

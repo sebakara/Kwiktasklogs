@@ -5,6 +5,7 @@ namespace Webkul\TimeOff\Filament\Clusters\MyTime\Resources\MyTimeOffResource\Pa
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\CreateRecord;
 use Webkul\TimeOff\Filament\Clusters\MyTime\Resources\MyTimeOffResource;
+use Webkul\TimeOff\Services\LeaveApprovalService;
 use Webkul\TimeOff\Traits\TimeOffHelper;
 
 class CreateMyTimeOff extends CreateRecord
@@ -38,5 +39,10 @@ class CreateMyTimeOff extends CreateRecord
     protected function mutateFormDataBeforeCreate(array $data): array
     {
         return $this->mutateTimeOffData($data, $this->record?->id);
+    }
+
+    protected function afterCreate(): void
+    {
+        app(LeaveApprovalService::class)->notifyOnSubmit($this->getRecord());
     }
 }
