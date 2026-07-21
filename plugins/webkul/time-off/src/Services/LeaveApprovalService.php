@@ -96,31 +96,18 @@ class LeaveApprovalService
             ->body("{$leaveType} · {$from} to {$to}")
             ->warning();
 
-        $managerIds = $this->managerApproverUserIds($leave->employee);
-        $hrIds = collect($leave->holidayStatus?->notifiedTimeOffOfficers ?? [])->pluck('id')->map(fn ($id) => (int) $id);
-
-        \Log::info('[TimeOff] notifyOnSubmit called', [
-            'leave_id'     => $leave->id,
-            'employee'     => $employeeName,
-            'leave_type'   => $leaveType,
-            'manager_ids'  => $managerIds->toArray(),
-            'hr_ids'       => $hrIds->toArray(),
-        ]);
-
-        $recipients = $managerIds->merge($hrIds)->unique()
+        $recipients = $this->managerApproverUserIds($leave->employee)
+            ->merge(
+                collect($leave->holidayStatus?->notifiedTimeOffOfficers ?? [])->pluck('id')->map(fn ($id) => (int) $id)
+            )
+            ->unique()
             ->map(fn (int $id) => User::find($id))
             ->filter();
-
-        \Log::info('[TimeOff] Recipients resolved', [
-            'count'      => $recipients->count(),
-            'recipients' => $recipients->map(fn ($u) => ['id' => $u->id, 'name' => $u->name, 'email' => $u->email])->toArray(),
-        ]);
 
         foreach ($recipients as $recipient) {
             $notification->sendToDatabase($recipient);
 
             if (blank($recipient->email)) {
-                \Log::warning('[TimeOff] Skipping email — recipient has no email', ['user_id' => $recipient->id]);
                 continue;
             }
 
@@ -147,14 +134,8 @@ class LeaveApprovalService
                 $payload['from']['company'] = Auth::user()->defaultCompany->toArray();
             }
 
-            try {
-                Mail::to($recipient->email, $recipient->name)
-                    ->send(new TimeOffRequestMail('time-off::mails.time-off-request', $payload));
-
-                \Log::info('[TimeOff] Email sent', ['to' => $recipient->email]);
-            } catch (\Exception $e) {
-                \Log::error('[TimeOff] Email failed', ['to' => $recipient->email, 'error' => $e->getMessage()]);
-            }
+            Mail::to($recipient->email, $recipient->name)
+                ->send(new TimeOffRequestMail('time-off::mails.time-off-request', $payload));
         }
     }
 
