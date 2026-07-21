@@ -18,6 +18,7 @@ use Webkul\FullCalendar\Filament\Actions\DeleteAction;
 use Webkul\FullCalendar\Filament\Actions\EditAction;
 use Webkul\FullCalendar\Filament\Actions\ViewAction;
 use Webkul\FullCalendar\Filament\Widgets\FullCalendarWidget;
+use Webkul\TimeOff\Services\LeaveApprovalService;
 use Webkul\TimeOff\Enums\State;
 use Webkul\TimeOff\Filament\Actions\HolidayAction;
 use Webkul\TimeOff\Models\Leave;
@@ -162,7 +163,9 @@ class CalendarWidget extends FullCalendarWidget
                 ->action(function ($data, CreateAction $action) {
                     $data = $this->mutateTimeOffData($data, $this->record?->id, $action);
 
-                    Leave::create($data);
+                    $leave = Leave::create($data);
+
+                    app(LeaveApprovalService::class)->notifyOnSubmit($leave);
 
                     Notification::make()
                         ->success()

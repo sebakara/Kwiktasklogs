@@ -17,6 +17,7 @@ use Webkul\FullCalendar\Filament\Actions\ViewAction;
 use Webkul\FullCalendar\Filament\Widgets\FullCalendarWidget;
 use Webkul\TimeOff\Enums\State;
 use Webkul\TimeOff\Models\Leave;
+use Webkul\TimeOff\Services\LeaveApprovalService;
 use Webkul\TimeOff\Traits\TimeOffHelper;
 
 class OverviewCalendarWidget extends FullCalendarWidget
@@ -97,7 +98,9 @@ class OverviewCalendarWidget extends FullCalendarWidget
                 ->modalDescription(__('time-off::filament/widgets/overview-calendar-widget.header-actions.create.description'))
                 ->action(function ($data, CreateAction $action) {
                     $data = $this->mutateTimeOffData($data, $this->record?->id, $action);
-                    Leave::create($data);
+                    $leave = Leave::create($data);
+
+                    app(LeaveApprovalService::class)->notifyOnSubmit($leave);
 
                     Notification::make()
                         ->success()
