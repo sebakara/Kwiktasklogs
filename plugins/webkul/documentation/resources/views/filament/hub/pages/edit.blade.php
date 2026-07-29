@@ -2,7 +2,9 @@
     {{-- Quill — synchronous load so Quill is ready before Alpine initialises --}}
     @once
     <link rel="stylesheet" href="{{ asset('js/quill/quill.snow.css') }}">
+    <link rel="stylesheet" href="{{ asset('js/quill/quill-better-table.css') }}">
     <script src="{{ asset('js/quill/quill.min.js') }}"></script>
+    <script src="{{ asset('js/quill/quill-better-table.js') }}"></script>
     <script>
     document.addEventListener('alpine:init', function () {
         Alpine.data('docQuillEditor', function (opts) {
@@ -17,10 +19,39 @@
                     var self = this;
                     if (typeof Quill === 'undefined') { console.error('Quill not loaded'); return; }
 
+                    // Register the better-table module
+                    Quill.register({ 'modules/better-table': quillBetterTable.default }, true);
+
                     self.quill = new Quill(self.$refs.quillBox, {
                         theme: 'snow',
                         modules: {
-                            toolbar: { container: '#doc-quill-toolbar', handlers: {} }
+                            toolbar: {
+                                container: '#doc-quill-toolbar',
+                                handlers: {
+                                    'table': function () {
+                                        var tableModule = self.quill.getModule('better-table');
+                                        tableModule.insertTable(3, 3);
+                                    }
+                                }
+                            },
+                            'better-table': {
+                                operationMenu: {
+                                    items: {
+                                        insertColumnRight: { text: 'Insert column right' },
+                                        insertColumnLeft: { text: 'Insert column left' },
+                                        insertRowUp: { text: 'Insert row above' },
+                                        insertRowDown: { text: 'Insert row below' },
+                                        mergeCells: { text: 'Merge cells' },
+                                        unmergeCells: { text: 'Unmerge cells' },
+                                        deleteColumn: { text: 'Delete column' },
+                                        deleteRow: { text: 'Delete row' },
+                                        deleteTable: { text: 'Delete table' },
+                                    }
+                                }
+                            },
+                            keyboard: {
+                                bindings: quillBetterTable.default.keyboardBindings
+                            }
                         }
                     });
 
@@ -270,6 +301,17 @@
                                         <polyline points="21 15 16 10 5 21"/>
                                     </svg>
                                 </label>
+                            </span>
+                            <span class="ql-formats">
+                                <button class="ql-table" title="Insert table">
+                                    <svg viewBox="0 0 18 18" fill="currentColor" width="18" height="18">
+                                        <rect class="ql-stroke" x="1" y="1" width="16" height="16" rx="1" fill="none" stroke="currentColor" stroke-width="1.5"/>
+                                        <line class="ql-stroke" x1="1" y1="6" x2="17" y2="6" stroke="currentColor" stroke-width="1.5"/>
+                                        <line class="ql-stroke" x1="1" y1="12" x2="17" y2="12" stroke="currentColor" stroke-width="1.5"/>
+                                        <line class="ql-stroke" x1="6" y1="6" x2="6" y2="17" stroke="currentColor" stroke-width="1.5"/>
+                                        <line class="ql-stroke" x1="12" y1="6" x2="12" y2="17" stroke="currentColor" stroke-width="1.5"/>
+                                    </svg>
+                                </button>
                             </span>
                             <span class="ql-formats">
                                 <button class="ql-clean" title="Clear formatting"></button>

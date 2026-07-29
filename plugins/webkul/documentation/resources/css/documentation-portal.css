@@ -3872,3 +3872,37 @@ body:has(.doc-hub-page) .fi-main-ctn-sidebar-open {
     margin: 0.5rem 0;
 }
 .doc-quill-editor.ql-container.ql-snow { border: none !important; }
+
+/* ---- Table button in toolbar ---- */
+.doc-quill-toolbar button.ql-table { padding: 2px 3px; }
+.doc-quill-toolbar button.ql-table svg { display: block; }
+
+/* ---- Tables inside the Quill editor ---- */
+.doc-quill-editor .ql-editor table {
+    border-collapse: collapse;
+    width: 100%;
+    margin: 0.75rem 0;
+    font-size: 0.9rem;
+}
+.doc-quill-editor .ql-editor td,
+.doc-quill-editor .ql-editor th {
+    border: 1px solid rgb(209 213 219);
+    padding: 6px 10px;
+    min-width: 60px;
+    vertical-align: top;
+}
+.dark .doc-quill-editor .ql-editor td,
+.dark .doc-quill-editor .ql-editor th {
+    border-color: rgb(75 85 99);
+}
+.doc-quill-editor .ql-editor th {
+    background: rgb(243 244 246);
+    font-weight: 600;
+}
+.dark .doc-quill-editor .ql-editor th {
+    background: rgb(31 41 55);
+}
+
+/* quill-better-table context menu z-index fix inside Filament modal stack */
+.quill-better-table-wrapper { z-index: 9999 !important; }
+.qlbt-operation-menu { z-index: 9999 !important; }
