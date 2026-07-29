@@ -59,49 +59,21 @@
                         self.quill.root.innerHTML = self.initialContent;
                     }
 
-                    /* Intercept Markdown table paste at document level (capture).
-                       document capture fires before ANY element-level listener, including
-                       quill-better-table's own clipboard handler. We insert directly via
-                       the Selection API so nothing downstream can strip the table HTML. */
-                    document.addEventListener('paste', function (e) {
-                        if (!self.quill || !self.quill.root.contains(e.target)) return;
-
-                        var text = (e.clipboardData || window.clipboardData).getData('text/plain');
-                        if (!text || !self.looksLikeMarkdownTable(text)) return;
-
-                        e.preventDefault();
-                        e.stopPropagation();
-                        e.stopImmediatePropagation();
-
-                        var html = self.markdownTableToHtml(text);
-
-                        // Insert via Selection API — works in all modern browsers
-                        var sel = window.getSelection();
-                        if (sel && sel.rangeCount) {
-                            var range = sel.getRangeAt(0);
-                            range.deleteContents();
-
-                            var tmp = document.createElement('div');
-                            tmp.innerHTML = html;
-                            var frag = document.createDocumentFragment();
-                            var lastNode = null;
-                            while (tmp.firstChild) {
-                                lastNode = frag.appendChild(tmp.firstChild);
-                            }
-                            range.insertNode(frag);
-
-                            if (lastNode) {
-                                var after = range.cloneRange();
-                                after.setStartAfter(lastNode);
-                                after.collapse(true);
-                                sel.removeAllRanges();
-                                sel.addRange(after);
-                            }
-                        }
-
-                        // Let Quill sync its internal model and fire text-change
-                        self.quill.update('user');
-                    }, true);
+                    /* After any user-driven text-change, check if the new content
+                       contains Markdown table lines and convert them in-place.
+                       This avoids fighting with quill-better-table's clipboard hooks. */
+                    self._mdConvertTimer = null;
+                    self.quill.on('text-change', function (delta, oldDelta, source) {
+                        if (source !== 'user') return;
+                        var hasTable = delta.ops.some(function (op) {
+                            return typeof op.insert === 'string' && op.insert.indexOf('|') !== -1;
+                        });
+                        if (!hasTable) return;
+                        clearTimeout(self._mdConvertTimer);
+                        self._mdConvertTimer = setTimeout(function () {
+                            self.convertMarkdownTablesInEditor();
+                        }, 80);
+                    });
 
                     /* Sync Quill → hidden textarea. Livewire reads wire:model="pageContent"
                        from that textarea on every request, so no capture-listener tricks needed. */
@@ -113,6 +85,58 @@
                             ta.dispatchEvent(new Event('input'));
                         }
                     });
+                },
+
+                convertMarkdownTablesInEditor: function () {
+                    var self = this;
+                    // Collect all <p> children and group consecutive ones that look like
+                    // Markdown table rows (contain at least one |).
+                    var root = self.quill.root;
+                    var children = Array.prototype.slice.call(root.childNodes);
+                    var groups = [];   // [{start, nodes, lines}]
+                    var current = null;
+
+                    children.forEach(function (node) {
+                        var text = (node.innerText || node.textContent || '').trim();
+                        var isTableLine = text.indexOf('|') !== -1;
+                        if (isTableLine) {
+                            if (!current) { current = { startNode: node, nodes: [], lines: [] }; }
+                            current.nodes.push(node);
+                            current.lines.push(text);
+                        } else {
+                            if (current) { groups.push(current); current = null; }
+                        }
+                    });
+                    if (current) groups.push(current);
+
+                    var changed = false;
+                    groups.forEach(function (g) {
+                        var mdText = g.lines.join('\n');
+                        if (!self.looksLikeMarkdownTable(mdText)) return;
+
+                        // Build the replacement table element
+                        var tmp = document.createElement('div');
+                        tmp.innerHTML = self.markdownTableToHtml(mdText);
+
+                        // Insert replacement before the first node, then remove originals
+                        var parent = g.nodes[0].parentNode;
+                        var ref = g.nodes[0];
+                        while (tmp.firstChild) {
+                            parent.insertBefore(tmp.firstChild, ref);
+                        }
+                        g.nodes.forEach(function (n) { parent.removeChild(n); });
+                        changed = true;
+                    });
+
+                    if (changed) {
+                        self.quill.update('user');
+                        // Sync the hidden textarea immediately
+                        var ta = document.getElementById('quill-content-sync');
+                        if (ta) {
+                            ta.value = root.innerHTML;
+                            ta.dispatchEvent(new Event('input'));
+                        }
+                    }
                 },
 
                 looksLikeMarkdownTable: function (text) {
