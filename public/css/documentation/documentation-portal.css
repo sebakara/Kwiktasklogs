@@ -1187,6 +1187,12 @@ body:has(.doc-portal-reader-page) .fi-main-ctn-sidebar-open {
     background-color: rgb(31 41 55);
 }
 
+/* Tailwind preflight resets these — restore for rendered doc content */
+.doc-portal-prose strong { font-weight: 700; }
+.doc-portal-prose em     { font-style: italic; }
+.doc-portal-prose u      { text-decoration: underline; }
+.doc-portal-prose s      { text-decoration: line-through; }
+
 .doc-portal-prose code {
     border-radius: 0.25rem;
     background-color: rgb(243 244 246);
@@ -3865,6 +3871,21 @@ body:has(.doc-hub-page) .fi-main-ctn-sidebar-open {
 .doc-quill-editor .ql-editor ul,
 .doc-quill-editor .ql-editor ol { padding-left: 1.5rem; margin: 0 0 0.5rem; }
 .doc-quill-editor .ql-editor img { max-width: 100%; height: auto; border-radius: 4px; margin: 0.5rem 0; }
+/* Tailwind preflight resets strong/em/etc — restore them inside the editor */
+.doc-quill-editor .ql-editor strong { font-weight: 700; }
+.doc-quill-editor .ql-editor em     { font-style: italic; }
+.doc-quill-editor .ql-editor u      { text-decoration: underline; }
+.doc-quill-editor .ql-editor s      { text-decoration: line-through; }
+.doc-quill-editor .ql-editor a      { color: #2563eb; text-decoration: underline; }
+.dark .doc-quill-editor .ql-editor a { color: #60a5fa; }
+.doc-quill-editor .ql-editor code {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 0.875em;
+    background: rgba(0, 0, 0, 0.06);
+    padding: 1px 4px;
+    border-radius: 3px;
+}
+.dark .doc-quill-editor .ql-editor code { background: rgba(255,255,255,0.1); }
 .doc-quill-editor .ql-editor blockquote {
     border-left: 4px solid rgb(209 213 219);
     padding-left: 1rem;
