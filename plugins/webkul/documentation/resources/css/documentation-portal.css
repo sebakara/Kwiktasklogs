@@ -1164,16 +1164,16 @@ body:has(.doc-portal-reader-page) .fi-main-ctn-sidebar-open {
     margin: 1rem 0;
     border-collapse: collapse;
     font-size: 0.875rem;
-    border: 2px solid rgb(37 99 235);
-    border-radius: 0;
+    border: 2px solid #000000;
 }
 
 .doc-portal-prose th,
 .doc-portal-prose td {
-    border: 1px solid rgb(147 197 253);
+    border: 1px solid #000000;
     padding: 0.5rem 0.875rem;
     text-align: left;
     vertical-align: top;
+    color: #000000;
 }
 
 .doc-portal-prose th {
@@ -1192,7 +1192,7 @@ body:has(.doc-portal-reader-page) .fi-main-ctn-sidebar-open {
 }
 
 .dark .doc-portal-prose table {
-    border-color: rgb(59 130 246);
+    border-color: #000000;
 }
 
 .dark .doc-portal-prose th {
@@ -1202,15 +1202,16 @@ body:has(.doc-portal-reader-page) .fi-main-ctn-sidebar-open {
 
 .dark .doc-portal-prose th,
 .dark .doc-portal-prose td {
-    border-color: rgb(55 91 163);
+    border-color: #000000;
+    color: #000000;
 }
 
 .dark .doc-portal-prose tr:nth-child(even) td {
-    background-color: rgb(23 37 84);
+    background-color: rgb(219 234 254);
 }
 
 .dark .doc-portal-prose tr:hover td {
-    background-color: rgb(30 58 138);
+    background-color: rgb(191 219 254);
 }
 
 /* Tailwind preflight resets these — restore for rendered doc content */
@@ -3931,14 +3932,15 @@ body:has(.doc-hub-page) .fi-main-ctn-sidebar-open {
     width: 100%;
     margin: 0.75rem 0;
     font-size: 0.9rem;
-    border: 2px solid rgb(37 99 235);
+    border: 2px solid #000000;
 }
 .doc-quill-editor .ql-editor td,
 .doc-quill-editor .ql-editor th {
-    border: 1px solid rgb(147 197 253);
+    border: 1px solid #000000;
     padding: 7px 12px;
     min-width: 80px;
     vertical-align: top;
+    color: #000000;
 }
 .doc-quill-editor .ql-editor th {
     background: rgb(37 99 235);
@@ -3948,19 +3950,19 @@ body:has(.doc-hub-page) .fi-main-ctn-sidebar-open {
 .doc-quill-editor .ql-editor tr:nth-child(even) td {
     background-color: rgb(239 246 255);
 }
-.dark .doc-quill-editor .ql-editor table,
-.dark .doc-quill-editor .ql-editor .quill-better-table {
-    border-color: rgb(59 130 246);
+.dark .doc-quill-editor .ql-editor table {
+    border-color: #000000;
 }
 .dark .doc-quill-editor .ql-editor td,
 .dark .doc-quill-editor .ql-editor th {
-    border-color: rgb(55 91 163);
+    border-color: #000000;
+    color: #000000;
 }
 .dark .doc-quill-editor .ql-editor th {
     background: rgb(29 78 216);
     color: #ffffff;
 }
 .dark .doc-quill-editor .ql-editor tr:nth-child(even) td {
-    background-color: rgb(23 37 84);
+    background-color: rgb(219 234 254);
 }
 
