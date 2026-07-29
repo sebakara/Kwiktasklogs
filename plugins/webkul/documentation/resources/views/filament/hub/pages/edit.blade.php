@@ -2,9 +2,7 @@
     {{-- Quill — synchronous load so Quill is ready before Alpine initialises --}}
     @once
     <link rel="stylesheet" href="{{ asset('js/quill/quill.snow.css') }}">
-    <link rel="stylesheet" href="{{ asset('js/quill/quill-better-table.css') }}">
     <script src="{{ asset('js/quill/quill.min.js') }}"></script>
-    <script src="{{ asset('js/quill/quill-better-table.js') }}"></script>
     <script>
     document.addEventListener('alpine:init', function () {
         Alpine.data('docQuillEditor', function (opts) {
@@ -19,38 +17,14 @@
                     var self = this;
                     if (typeof Quill === 'undefined') { console.error('Quill not loaded'); return; }
 
-                    // Register the better-table module (UMD global — no .default)
-                    Quill.register({ 'modules/better-table': quillBetterTable }, true);
-
                     self.quill = new Quill(self.$refs.quillBox, {
                         theme: 'snow',
                         modules: {
                             toolbar: {
                                 container: '#doc-quill-toolbar',
                                 handlers: {
-                                    'table': function () {
-                                        var tableModule = self.quill.getModule('better-table');
-                                        if (tableModule) tableModule.insertTable(3, 3);
-                                    }
+                                    'insert-table': function () { self.insertBlankTable(3, 3); }
                                 }
-                            },
-                            'better-table': {
-                                operationMenu: {
-                                    items: {
-                                        insertColumnRight: { text: 'Insert column right' },
-                                        insertColumnLeft: { text: 'Insert column left' },
-                                        insertRowUp: { text: 'Insert row above' },
-                                        insertRowDown: { text: 'Insert row below' },
-                                        mergeCells: { text: 'Merge cells' },
-                                        unmergeCells: { text: 'Unmerge cells' },
-                                        deleteColumn: { text: 'Delete column' },
-                                        deleteRow: { text: 'Delete row' },
-                                        deleteTable: { text: 'Delete table' },
-                                    }
-                                }
-                            },
-                            keyboard: {
-                                bindings: quillBetterTable.keyboardBindings
                             }
                         }
                     });
@@ -59,24 +33,19 @@
                         self.quill.root.innerHTML = self.initialContent;
                     }
 
-                    /* After any user-driven text-change, check if the new content
-                       contains Markdown table lines and convert them in-place.
-                       This avoids fighting with quill-better-table's clipboard hooks. */
-                    self._mdConvertTimer = null;
+                    /* Markdown table paste: runs after Quill inserts plain text */
+                    self._mdTimer = null;
                     self.quill.on('text-change', function (delta, oldDelta, source) {
                         if (source !== 'user') return;
-                        var hasTable = delta.ops.some(function (op) {
-                            return typeof op.insert === 'string' && op.insert.indexOf('|') !== -1;
-                        });
-                        if (!hasTable) return;
-                        clearTimeout(self._mdConvertTimer);
-                        self._mdConvertTimer = setTimeout(function () {
-                            self.convertMarkdownTablesInEditor();
-                        }, 80);
+                        var inserted = delta.ops
+                            .filter(function (op) { return typeof op.insert === 'string'; })
+                            .map(function (op) { return op.insert; }).join('');
+                        if (inserted.indexOf('|') === -1) return;
+                        clearTimeout(self._mdTimer);
+                        self._mdTimer = setTimeout(function () { self.convertMarkdownTables(); }, 60);
                     });
 
-                    /* Sync Quill → hidden textarea. Livewire reads wire:model="pageContent"
-                       from that textarea on every request, so no capture-listener tricks needed. */
+                    /* Sync editor → hidden textarea for Livewire */
                     self.quill.on('text-change', function () {
                         var html = self.quill.root.innerHTML;
                         var ta = document.getElementById('quill-content-sync');
@@ -87,141 +56,111 @@
                     });
                 },
 
-                convertMarkdownTablesInEditor: function () {
-                    var self = this;
-                    // Collect all <p> children and group consecutive ones that look like
-                    // Markdown table rows (contain at least one |).
-                    var root = self.quill.root;
-                    var children = Array.prototype.slice.call(root.childNodes);
-                    var groups = [];   // [{start, nodes, lines}]
-                    var current = null;
+                /* Insert a blank rows×cols table at cursor */
+                insertBlankTable: function (rows, cols) {
+                    var html = '<table><thead><tr>';
+                    for (var c = 0; c < cols; c++) html += '<th>&nbsp;</th>';
+                    html += '</tr></thead><tbody>';
+                    for (var r = 0; r < rows - 1; r++) {
+                        html += '<tr>';
+                        for (var c2 = 0; c2 < cols; c2++) html += '<td>&nbsp;</td>';
+                        html += '</tr>';
+                    }
+                    html += '</tbody></table><p><br></p>';
 
-                    children.forEach(function (node) {
-                        var text = (node.innerText || node.textContent || '').trim();
-                        var isTableLine = text.indexOf('|') !== -1;
-                        if (isTableLine) {
-                            if (!current) { current = { startNode: node, nodes: [], lines: [] }; }
-                            current.nodes.push(node);
-                            current.lines.push(text);
+                    var range = this.quill.getSelection(true) || { index: this.quill.getLength() };
+                    this.quill.clipboard.dangerouslyPasteHTML(range.index, html, 'user');
+                },
+
+                /* After paste: find groups of | lines and replace with <table> */
+                convertMarkdownTables: function () {
+                    var self = this;
+                    var root = self.quill.root;
+                    var nodes = Array.prototype.slice.call(root.childNodes);
+                    var groups = [], cur = null;
+
+                    nodes.forEach(function (n) {
+                        var txt = (n.innerText || n.textContent || '').trim();
+                        if (txt.indexOf('|') !== -1) {
+                            if (!cur) cur = { nodes: [], lines: [] };
+                            cur.nodes.push(n);
+                            cur.lines.push(txt);
                         } else {
-                            if (current) { groups.push(current); current = null; }
+                            if (cur) { groups.push(cur); cur = null; }
                         }
                     });
-                    if (current) groups.push(current);
+                    if (cur) groups.push(cur);
 
                     var changed = false;
                     groups.forEach(function (g) {
-                        var mdText = g.lines.join('\n');
-                        if (!self.looksLikeMarkdownTable(mdText)) return;
-
-                        // Build the replacement table element
+                        if (!self.isMdTable(g.lines.join('\n'))) return;
                         var tmp = document.createElement('div');
-                        tmp.innerHTML = self.markdownTableToHtml(mdText);
-
-                        // Insert replacement before the first node, then remove originals
+                        tmp.innerHTML = self.mdToTable(g.lines.join('\n'));
                         var parent = g.nodes[0].parentNode;
-                        var ref = g.nodes[0];
-                        while (tmp.firstChild) {
-                            parent.insertBefore(tmp.firstChild, ref);
-                        }
+                        var ref    = g.nodes[0];
+                        while (tmp.firstChild) parent.insertBefore(tmp.firstChild, ref);
                         g.nodes.forEach(function (n) { parent.removeChild(n); });
                         changed = true;
                     });
 
                     if (changed) {
                         self.quill.update('user');
-                        // Sync the hidden textarea immediately
                         var ta = document.getElementById('quill-content-sync');
-                        if (ta) {
-                            ta.value = root.innerHTML;
-                            ta.dispatchEvent(new Event('input'));
-                        }
+                        if (ta) { ta.value = root.innerHTML; ta.dispatchEvent(new Event('input')); }
                     }
                 },
 
-                looksLikeMarkdownTable: function (text) {
-                    var lines = text.trim().split('\n').filter(function (l) { return l.trim(); });
-                    // Need at least 2 lines, at least 2 of which start and end with |
-                    var pipelines = lines.filter(function (l) { return /^\s*\|.*\|\s*$/.test(l); });
-                    return pipelines.length >= 2;
+                isMdTable: function (text) {
+                    var rows = text.trim().split('\n').filter(function (l) { return l.trim(); });
+                    return rows.filter(function (l) { return /^\s*\|.*\|\s*$/.test(l); }).length >= 2;
                 },
 
-                markdownTableToHtml: function (text) {
-                    var lines = text.trim().split('\n')
-                        .map(function (l) { return l.trim(); })
-                        .filter(function (l) { return l; });
+                mdToTable: function (text) {
+                    var lines = text.trim().split('\n').map(function (l) { return l.trim(); }).filter(Boolean);
 
-                    // Split a pipe-delimited row into cells, stripping outer pipes
-                    function splitRow(line) {
+                    function cells(line) {
                         return line.replace(/^\||\|$/g, '').split('|').map(function (c) { return c.trim(); });
                     }
-
-                    // Is this a separator row like |---|:---:|---:|
-                    function isSeparator(line) {
-                        return /^\|?[\s\-:|]+(\|[\s\-:|]+)*\|?$/.test(line);
+                    function isSep(line) { return /^\|?[\s\-:|]+(\|[\s\-:|]+)*\|?$/.test(line); }
+                    function align(s) {
+                        return /^:-+:$/.test(s) ? 'center' : /^-+:$/.test(s) ? 'right' : /^:-+$/.test(s) ? 'left' : '';
+                    }
+                    function inline(s) {
+                        return s.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+                                .replace(/\*(.+?)\*/g, '<em>$1</em>')
+                                .replace(/_(.+?)_/g, '<em>$1</em>')
+                                .replace(/`(.+?)`/g, '<code>$1</code>');
                     }
 
-                    // Convert inline Markdown (bold, italic, code) to HTML
-                    function inlineToHtml(cell) {
-                        return cell
-                            .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-                            .replace(/\*(.+?)\*/g, '<em>$1</em>')
-                            .replace(/_(.+?)_/g, '<em>$1</em>')
-                            .replace(/`(.+?)`/g, '<code>$1</code>');
-                    }
-
-                    // Detect alignment from separator cells
-                    function getAlign(sep) {
-                        if (/^:-+:$/.test(sep)) return 'center';
-                        if (/^-+:$/.test(sep))  return 'right';
-                        if (/^:-+$/.test(sep))  return 'left';
-                        return '';
-                    }
-
-                    var html = '<table class="quill-better-table"><tbody>';
-                    var alignments = [];
-                    var headerDone = false;
-                    var inThead = false;
+                    var aligns = [], html = '', inHead = false, headDone = false;
 
                     for (var i = 0; i < lines.length; i++) {
-                        var line = lines[i];
-
-                        if (isSeparator(line)) {
-                            // Close thead, collect alignments
-                            if (inThead) { html += '</tr></thead><tbody>'; inThead = false; }
-                            alignments = splitRow(line).map(getAlign);
-                            headerDone = true;
+                        var l = lines[i];
+                        if (isSep(l)) {
+                            if (inHead) { html += '</tr></thead><tbody>'; inHead = false; }
+                            aligns = cells(l).map(align);
+                            headDone = true;
                             continue;
                         }
-
-                        if (!/\|/.test(line)) {
-                            // Non-table line — wrap in paragraph and append
-                            html += '</tbody></table><p>' + inlineToHtml(line) + '</p><table class="quill-better-table"><tbody>';
-                            continue;
-                        }
-
-                        var cells = splitRow(line);
-
-                        if (!headerDone && i === 0) {
-                            // First row before separator = header
-                            html += '<thead><tr>';
-                            inThead = true;
-                            cells.forEach(function (cell, ci) {
-                                var align = alignments[ci] ? ' style="text-align:' + alignments[ci] + '"' : '';
-                                html += '<th' + align + '>' + inlineToHtml(cell) + '</th>';
+                        var cs = cells(l);
+                        if (!headDone && i === 0) {
+                            html += '<table><thead><tr>'; inHead = true;
+                            cs.forEach(function (c, ci) {
+                                var a = aligns[ci] ? ' style="text-align:' + aligns[ci] + '"' : '';
+                                html += '<th' + a + '>' + inline(c) + '</th>';
                             });
                         } else {
+                            if (html === '') html += '<table><tbody>';
                             html += '<tr>';
-                            cells.forEach(function (cell, ci) {
-                                var align = alignments[ci] ? ' style="text-align:' + alignments[ci] + '"' : '';
-                                html += '<td' + align + '>' + inlineToHtml(cell) + '</td>';
+                            cs.forEach(function (c, ci) {
+                                var a = aligns[ci] ? ' style="text-align:' + aligns[ci] + '"' : '';
+                                html += '<td' + a + '>' + inline(c) + '</td>';
                             });
                             html += '</tr>';
                         }
                     }
-
-                    if (inThead) html += '</tr></thead>';
-                    html += '</tbody></table>';
+                    if (inHead) html += '</tr></thead>';
+                    html += '</tbody></table><p><br></p>';
                     return html;
                 },
 
@@ -457,13 +396,13 @@
                                 </label>
                             </span>
                             <span class="ql-formats">
-                                <button class="ql-table" title="Insert table">
-                                    <svg viewBox="0 0 18 18" fill="currentColor" width="18" height="18">
-                                        <rect class="ql-stroke" x="1" y="1" width="16" height="16" rx="1" fill="none" stroke="currentColor" stroke-width="1.5"/>
-                                        <line class="ql-stroke" x1="1" y1="6" x2="17" y2="6" stroke="currentColor" stroke-width="1.5"/>
-                                        <line class="ql-stroke" x1="1" y1="12" x2="17" y2="12" stroke="currentColor" stroke-width="1.5"/>
-                                        <line class="ql-stroke" x1="6" y1="6" x2="6" y2="17" stroke="currentColor" stroke-width="1.5"/>
-                                        <line class="ql-stroke" x1="12" y1="6" x2="12" y2="17" stroke="currentColor" stroke-width="1.5"/>
+                                <button class="ql-insert-table" title="Insert table">
+                                    <svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5" width="18" height="18">
+                                        <rect x="1" y="1" width="16" height="16" rx="1"/>
+                                        <line x1="1" y1="6" x2="17" y2="6"/>
+                                        <line x1="1" y1="12" x2="17" y2="12"/>
+                                        <line x1="6" y1="6" x2="6" y2="17"/>
+                                        <line x1="12" y1="6" x2="12" y2="17"/>
                                     </svg>
                                 </button>
                             </span>

@@ -3921,12 +3921,12 @@ body:has(.doc-hub-page) .fi-main-ctn-sidebar-open {
 .doc-quill-editor.ql-container.ql-snow { border: none !important; }
 
 /* ---- Table button in toolbar ---- */
-.doc-quill-toolbar button.ql-table { padding: 2px 3px; }
-.doc-quill-toolbar button.ql-table svg { display: block; }
+.doc-quill-toolbar button.ql-insert-table { padding: 2px 3px; }
+.doc-quill-toolbar button.ql-insert-table svg { display: block; stroke: rgb(75 85 99); }
+.dark .doc-quill-toolbar button.ql-insert-table svg { stroke: rgb(209 213 219); }
 
 /* ---- Tables inside the Quill editor (Word-style) ---- */
-.doc-quill-editor .ql-editor table,
-.doc-quill-editor .ql-editor .quill-better-table {
+.doc-quill-editor .ql-editor table {
     border-collapse: collapse;
     width: 100%;
     margin: 0.75rem 0;
@@ -3964,6 +3964,3 @@ body:has(.doc-hub-page) .fi-main-ctn-sidebar-open {
     background-color: rgb(23 37 84);
 }
 
-/* quill-better-table context menu z-index fix inside Filament modal stack */
-.quill-better-table-wrapper { z-index: 9999 !important; }
-.qlbt-operation-menu { z-index: 9999 !important; }
