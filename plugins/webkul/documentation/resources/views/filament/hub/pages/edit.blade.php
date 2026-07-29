@@ -46,36 +46,70 @@
                     });
 
                     /* Sync editor → hidden textarea for Livewire */
-                    self.quill.on('text-change', function () {
-                        var html = self.quill.root.innerHTML;
-                        var ta = document.getElementById('quill-content-sync');
-                        if (ta) {
-                            ta.value = html === '<p><br></p>' ? '' : html;
-                            ta.dispatchEvent(new Event('input'));
-                        }
-                    });
+                    self.quill.on('text-change', function () { self.syncTextarea(); });
                 },
 
-                /* Insert a blank rows×cols table at cursor */
+                /* Sync DOM → hidden textarea without touching Quill's model */
+                syncTextarea: function () {
+                    var html = this.quill.root.innerHTML;
+                    var ta   = document.getElementById('quill-content-sync');
+                    if (ta) {
+                        ta.value = (html === '<p><br></p>') ? '' : html;
+                        ta.dispatchEvent(new Event('input'));
+                    }
+                },
+
+                /* Insert a blank rows×cols table directly into DOM (Quill strips <table>) */
                 insertBlankTable: function (rows, cols) {
                     var html = '<table><thead><tr>';
-                    for (var c = 0; c < cols; c++) html += '<th>&nbsp;</th>';
+                    for (var c = 0; c < cols; c++) html += '<th> </th>';
                     html += '</tr></thead><tbody>';
                     for (var r = 0; r < rows - 1; r++) {
                         html += '<tr>';
-                        for (var c2 = 0; c2 < cols; c2++) html += '<td>&nbsp;</td>';
+                        for (var cc = 0; cc < cols; cc++) html += '<td> </td>';
                         html += '</tr>';
                     }
-                    html += '</tbody></table><p><br></p>';
+                    html += '</tbody></table>';
 
-                    var range = this.quill.getSelection(true) || { index: this.quill.getLength() };
-                    this.quill.clipboard.dangerouslyPasteHTML(range.index, html, 'user');
+                    this.insertHtmlAtCursor(html);
                 },
 
-                /* After paste: find groups of | lines and replace with <table> */
+                /* Insert raw HTML at the current cursor position via Selection API */
+                insertHtmlAtCursor: function (html) {
+                    var self = this;
+                    self.quill.focus();
+                    var sel = window.getSelection();
+                    if (!sel || !sel.rangeCount) {
+                        self.quill.root.insertAdjacentHTML('beforeend', html);
+                    } else {
+                        var range = sel.getRangeAt(0);
+                        // Only act if selection is inside the editor
+                        if (!self.quill.root.contains(range.commonAncestorContainer)) {
+                            self.quill.root.insertAdjacentHTML('beforeend', html);
+                        } else {
+                            range.deleteContents();
+                            var tmp = document.createElement('div');
+                            tmp.innerHTML = html;
+                            var frag = document.createDocumentFragment();
+                            var last;
+                            while (tmp.firstChild) { last = frag.appendChild(tmp.firstChild); }
+                            range.insertNode(frag);
+                            if (last) {
+                                var after = document.createRange();
+                                after.setStartAfter(last);
+                                after.collapse(true);
+                                sel.removeAllRanges();
+                                sel.addRange(after);
+                            }
+                        }
+                    }
+                    self.syncTextarea();
+                },
+
+                /* After paste: find groups of | lines and replace with <table> in DOM */
                 convertMarkdownTables: function () {
                     var self = this;
-                    var root = self.quill.root;
+                    var root  = self.quill.root;
                     var nodes = Array.prototype.slice.call(root.childNodes);
                     var groups = [], cur = null;
 
@@ -103,11 +137,9 @@
                         changed = true;
                     });
 
-                    if (changed) {
-                        self.quill.update('user');
-                        var ta = document.getElementById('quill-content-sync');
-                        if (ta) { ta.value = root.innerHTML; ta.dispatchEvent(new Event('input')); }
-                    }
+                    /* Do NOT call quill.update() — Quill strips <table> tags.
+                       Sync the textarea directly instead. */
+                    if (changed) self.syncTextarea();
                 },
 
                 isMdTable: function (text) {
