@@ -59,7 +59,10 @@
                         self.quill.root.innerHTML = self.initialContent;
                     }
 
-                    /* Intercept paste: convert Markdown tables to HTML before Quill sees them */
+                    /* Intercept paste: convert Markdown tables to HTML before Quill sees them.
+                       We use document.execCommand('insertHTML') so the browser's own paste
+                       path handles it — bypassing both Quill and quill-better-table clipboard
+                       hooks that would strip or mishandle the table HTML. */
                     self.quill.root.addEventListener('paste', function (e) {
                         var text = (e.clipboardData || window.clipboardData).getData('text/plain');
                         if (!text || !self.looksLikeMarkdownTable(text)) return;
@@ -68,9 +71,8 @@
                         e.stopPropagation();
 
                         var html = self.markdownTableToHtml(text);
-                        var range = self.quill.getSelection(true);
-                        self.quill.clipboard.dangerouslyPasteHTML(range.index, html, 'user');
-                        self.quill.setSelection(range.index + 1, 0, 'silent');
+                        self.quill.focus();
+                        document.execCommand('insertHTML', false, html);
                     }, true);
 
                     /* Sync Quill → hidden textarea. Livewire reads wire:model="pageContent"
