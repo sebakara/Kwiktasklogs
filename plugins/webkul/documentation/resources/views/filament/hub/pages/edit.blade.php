@@ -19,8 +19,8 @@
                     var self = this;
                     if (typeof Quill === 'undefined') { console.error('Quill not loaded'); return; }
 
-                    // Register the better-table module
-                    Quill.register({ 'modules/better-table': quillBetterTable.default }, true);
+                    // Register the better-table module (UMD global — no .default)
+                    Quill.register({ 'modules/better-table': quillBetterTable }, true);
 
                     self.quill = new Quill(self.$refs.quillBox, {
                         theme: 'snow',
@@ -30,7 +30,7 @@
                                 handlers: {
                                     'table': function () {
                                         var tableModule = self.quill.getModule('better-table');
-                                        tableModule.insertTable(3, 3);
+                                        if (tableModule) tableModule.insertTable(3, 3);
                                     }
                                 }
                             },
@@ -50,7 +50,7 @@
                                 }
                             },
                             keyboard: {
-                                bindings: quillBetterTable.default.keyboardBindings
+                                bindings: quillBetterTable.keyboardBindings
                             }
                         }
                     });
