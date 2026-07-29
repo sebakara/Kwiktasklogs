@@ -17,6 +17,25 @@
                     var self = this;
                     if (typeof Quill === 'undefined') { console.error('Quill not loaded'); return; }
 
+                    /* Register a BlockEmbed blot so Quill keeps <figure class="ql-doc-table">
+                       intact — without this Quill's MutationObserver strips unknown tags. */
+                    (function () {
+                        var BlockEmbed = Quill.import('blots/block/embed');
+                        function TableBlot() { BlockEmbed.apply(this, arguments); }
+                        TableBlot.prototype = Object.create(BlockEmbed.prototype);
+                        TableBlot.prototype.constructor = TableBlot;
+                        TableBlot.create = function (value) {
+                            var node = BlockEmbed.create.call(this, value);
+                            node.innerHTML = value;
+                            return node;
+                        };
+                        TableBlot.value = function (node) { return node.innerHTML; };
+                        TableBlot.blotName  = 'doc-table';
+                        TableBlot.tagName   = 'figure';
+                        TableBlot.className = 'ql-doc-table';
+                        Quill.register(TableBlot, true);
+                    })();
+
                     self.quill = new Quill(self.$refs.quillBox, {
                         theme: 'snow',
                         modules: {
@@ -49,7 +68,7 @@
                     self.quill.on('text-change', function () { self.syncTextarea(); });
                 },
 
-                /* Sync DOM → hidden textarea without touching Quill's model */
+                /* Sync DOM → hidden textarea */
                 syncTextarea: function () {
                     var html = this.quill.root.innerHTML;
                     var ta   = document.getElementById('quill-content-sync');
@@ -59,56 +78,27 @@
                     }
                 },
 
-                /* Insert a blank rows×cols table directly into DOM (Quill strips <table>) */
+                /* Insert a blank rows×cols table via the registered blot */
                 insertBlankTable: function (rows, cols) {
-                    var html = '<table><thead><tr>';
-                    for (var c = 0; c < cols; c++) html += '<th> </th>';
-                    html += '</tr></thead><tbody>';
+                    var inner = '<table><thead><tr>';
+                    for (var c = 0; c < cols; c++) inner += '<th> </th>';
+                    inner += '</tr></thead><tbody>';
                     for (var r = 0; r < rows - 1; r++) {
-                        html += '<tr>';
-                        for (var cc = 0; cc < cols; cc++) html += '<td> </td>';
-                        html += '</tr>';
+                        inner += '<tr>';
+                        for (var cc = 0; cc < cols; cc++) inner += '<td> </td>';
+                        inner += '</tr>';
                     }
-                    html += '</tbody></table>';
+                    inner += '</tbody></table>';
 
-                    this.insertHtmlAtCursor(html);
+                    var idx = (this.quill.getSelection(true) || { index: this.quill.getLength() }).index;
+                    this.quill.insertEmbed(idx, 'doc-table', inner, 'user');
+                    this.quill.insertText(idx + 1, '\n', 'user');
+                    this.quill.setSelection(idx + 2, 0, 'user');
                 },
 
-                /* Insert raw HTML at the current cursor position via Selection API */
-                insertHtmlAtCursor: function (html) {
-                    var self = this;
-                    self.quill.focus();
-                    var sel = window.getSelection();
-                    if (!sel || !sel.rangeCount) {
-                        self.quill.root.insertAdjacentHTML('beforeend', html);
-                    } else {
-                        var range = sel.getRangeAt(0);
-                        // Only act if selection is inside the editor
-                        if (!self.quill.root.contains(range.commonAncestorContainer)) {
-                            self.quill.root.insertAdjacentHTML('beforeend', html);
-                        } else {
-                            range.deleteContents();
-                            var tmp = document.createElement('div');
-                            tmp.innerHTML = html;
-                            var frag = document.createDocumentFragment();
-                            var last;
-                            while (tmp.firstChild) { last = frag.appendChild(tmp.firstChild); }
-                            range.insertNode(frag);
-                            if (last) {
-                                var after = document.createRange();
-                                after.setStartAfter(last);
-                                after.collapse(true);
-                                sel.removeAllRanges();
-                                sel.addRange(after);
-                            }
-                        }
-                    }
-                    self.syncTextarea();
-                },
-
-                /* After paste: find groups of | lines and replace with <table> in DOM */
+                /* After paste: replace Markdown pipe-table paragraphs with the blot */
                 convertMarkdownTables: function () {
-                    var self = this;
+                    var self  = this;
                     var root  = self.quill.root;
                     var nodes = Array.prototype.slice.call(root.childNodes);
                     var groups = [], cur = null;
@@ -125,21 +115,26 @@
                     });
                     if (cur) groups.push(cur);
 
-                    var changed = false;
                     groups.forEach(function (g) {
                         if (!self.isMdTable(g.lines.join('\n'))) return;
-                        var tmp = document.createElement('div');
-                        tmp.innerHTML = self.mdToTable(g.lines.join('\n'));
-                        var parent = g.nodes[0].parentNode;
-                        var ref    = g.nodes[0];
-                        while (tmp.firstChild) parent.insertBefore(tmp.firstChild, ref);
-                        g.nodes.forEach(function (n) { parent.removeChild(n); });
-                        changed = true;
-                    });
 
-                    /* Do NOT call quill.update() — Quill strips <table> tags.
-                       Sync the textarea directly instead. */
-                    if (changed) self.syncTextarea();
+                        // Find the Quill index of the first node
+                        var firstBlot = Quill.find(g.nodes[0]);
+                        if (!firstBlot) return;
+                        var startIdx = self.quill.getIndex(firstBlot);
+
+                        // Count total length of all nodes to delete
+                        var totalLen = g.nodes.reduce(function (sum, n) {
+                            var b = Quill.find(n);
+                            return sum + (b ? b.length() : 0);
+                        }, 0);
+
+                        // Delete the plain-text lines and insert the blot
+                        var inner = self.mdToTable(g.lines.join('\n'));
+                        self.quill.deleteText(startIdx, totalLen, 'user');
+                        self.quill.insertEmbed(startIdx, 'doc-table', inner, 'user');
+                        self.quill.insertText(startIdx + 1, '\n', 'user');
+                    });
                 },
 
                 isMdTable: function (text) {
