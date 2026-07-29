@@ -41,6 +41,7 @@ return [
                 'title' => 'Settings',
 
                 'fields' => [
+                    'stage'                       => 'Stage',
                     'project'                     => 'Project',
                     'milestone'                   => 'Milestone',
                     'milestone-hint-text'         => 'Automatically deliver your services upon reaching a milestone by linking it to a sales order item.',

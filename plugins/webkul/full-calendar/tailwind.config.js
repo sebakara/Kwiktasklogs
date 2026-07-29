@@ -7,4 +7,4 @@ module.exports = {
         './resources/views/**/*.blade.php',
         './vendor/filament/**/*.blade.php',
     ],
-}
+};
