@@ -59,6 +59,20 @@
                         self.quill.root.innerHTML = self.initialContent;
                     }
 
+                    /* Intercept paste: convert Markdown tables to HTML before Quill sees them */
+                    self.quill.root.addEventListener('paste', function (e) {
+                        var text = (e.clipboardData || window.clipboardData).getData('text/plain');
+                        if (!text || !self.looksLikeMarkdownTable(text)) return;
+
+                        e.preventDefault();
+                        e.stopPropagation();
+
+                        var html = self.markdownTableToHtml(text);
+                        var range = self.quill.getSelection(true);
+                        self.quill.clipboard.dangerouslyPasteHTML(range.index, html, 'user');
+                        self.quill.setSelection(range.index + 1, 0, 'silent');
+                    }, true);
+
                     /* Sync Quill → hidden textarea. Livewire reads wire:model="pageContent"
                        from that textarea on every request, so no capture-listener tricks needed. */
                     self.quill.on('text-change', function () {
@@ -69,6 +83,92 @@
                             ta.dispatchEvent(new Event('input'));
                         }
                     });
+                },
+
+                looksLikeMarkdownTable: function (text) {
+                    var lines = text.trim().split('\n').filter(function (l) { return l.trim(); });
+                    // Need at least 2 lines, at least 2 of which start and end with |
+                    var pipelines = lines.filter(function (l) { return /^\s*\|.*\|\s*$/.test(l); });
+                    return pipelines.length >= 2;
+                },
+
+                markdownTableToHtml: function (text) {
+                    var lines = text.trim().split('\n')
+                        .map(function (l) { return l.trim(); })
+                        .filter(function (l) { return l; });
+
+                    // Split a pipe-delimited row into cells, stripping outer pipes
+                    function splitRow(line) {
+                        return line.replace(/^\||\|$/g, '').split('|').map(function (c) { return c.trim(); });
+                    }
+
+                    // Is this a separator row like |---|:---:|---:|
+                    function isSeparator(line) {
+                        return /^\|?[\s\-:|]+(\|[\s\-:|]+)*\|?$/.test(line);
+                    }
+
+                    // Convert inline Markdown (bold, italic, code) to HTML
+                    function inlineToHtml(cell) {
+                        return cell
+                            .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+                            .replace(/\*(.+?)\*/g, '<em>$1</em>')
+                            .replace(/_(.+?)_/g, '<em>$1</em>')
+                            .replace(/`(.+?)`/g, '<code>$1</code>');
+                    }
+
+                    // Detect alignment from separator cells
+                    function getAlign(sep) {
+                        if (/^:-+:$/.test(sep)) return 'center';
+                        if (/^-+:$/.test(sep))  return 'right';
+                        if (/^:-+$/.test(sep))  return 'left';
+                        return '';
+                    }
+
+                    var html = '<table class="quill-better-table"><tbody>';
+                    var alignments = [];
+                    var headerDone = false;
+                    var inThead = false;
+
+                    for (var i = 0; i < lines.length; i++) {
+                        var line = lines[i];
+
+                        if (isSeparator(line)) {
+                            // Close thead, collect alignments
+                            if (inThead) { html += '</tr></thead><tbody>'; inThead = false; }
+                            alignments = splitRow(line).map(getAlign);
+                            headerDone = true;
+                            continue;
+                        }
+
+                        if (!/\|/.test(line)) {
+                            // Non-table line — wrap in paragraph and append
+                            html += '</tbody></table><p>' + inlineToHtml(line) + '</p><table class="quill-better-table"><tbody>';
+                            continue;
+                        }
+
+                        var cells = splitRow(line);
+
+                        if (!headerDone && i === 0) {
+                            // First row before separator = header
+                            html += '<thead><tr>';
+                            inThead = true;
+                            cells.forEach(function (cell, ci) {
+                                var align = alignments[ci] ? ' style="text-align:' + alignments[ci] + '"' : '';
+                                html += '<th' + align + '>' + inlineToHtml(cell) + '</th>';
+                            });
+                        } else {
+                            html += '<tr>';
+                            cells.forEach(function (cell, ci) {
+                                var align = alignments[ci] ? ' style="text-align:' + alignments[ci] + '"' : '';
+                                html += '<td' + align + '>' + inlineToHtml(cell) + '</td>';
+                            });
+                            html += '</tr>';
+                        }
+                    }
+
+                    if (inThead) html += '</tr></thead>';
+                    html += '</tbody></table>';
+                    return html;
                 },
 
                 uploadFile: function (file) {
