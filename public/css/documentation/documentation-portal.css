@@ -1161,30 +1161,56 @@ body:has(.doc-portal-reader-page) .fi-main-ctn-sidebar-open {
 
 .doc-portal-prose table {
     width: 100%;
-    margin-bottom: 1rem;
+    margin: 1rem 0;
     border-collapse: collapse;
     font-size: 0.875rem;
+    border: 2px solid rgb(37 99 235);
+    border-radius: 0;
 }
 
 .doc-portal-prose th,
 .doc-portal-prose td {
-    border: 1px solid rgb(229 231 235);
-    padding: 0.5rem 0.75rem;
+    border: 1px solid rgb(147 197 253);
+    padding: 0.5rem 0.875rem;
     text-align: left;
+    vertical-align: top;
+}
+
+.doc-portal-prose th {
+    background-color: rgb(37 99 235);
+    color: #ffffff;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+}
+
+.doc-portal-prose tr:nth-child(even) td {
+    background-color: rgb(239 246 255);
+}
+
+.doc-portal-prose tr:hover td {
+    background-color: rgb(219 234 254);
+}
+
+.dark .doc-portal-prose table {
+    border-color: rgb(59 130 246);
+}
+
+.dark .doc-portal-prose th {
+    background-color: rgb(29 78 216);
+    color: #ffffff;
 }
 
 .dark .doc-portal-prose th,
 .dark .doc-portal-prose td {
-    border-color: rgb(55 65 81);
+    border-color: rgb(55 91 163);
 }
 
-.doc-portal-prose th {
-    background-color: rgb(249 250 251);
-    font-weight: 600;
+.dark .doc-portal-prose tr:nth-child(even) td {
+    background-color: rgb(23 37 84);
 }
 
-.dark .doc-portal-prose th {
-    background-color: rgb(31 41 55);
+.dark .doc-portal-prose tr:hover td {
+    background-color: rgb(30 58 138);
 }
 
 /* Tailwind preflight resets these — restore for rendered doc content */
@@ -3898,30 +3924,44 @@ body:has(.doc-hub-page) .fi-main-ctn-sidebar-open {
 .doc-quill-toolbar button.ql-table { padding: 2px 3px; }
 .doc-quill-toolbar button.ql-table svg { display: block; }
 
-/* ---- Tables inside the Quill editor ---- */
-.doc-quill-editor .ql-editor table {
+/* ---- Tables inside the Quill editor (Word-style) ---- */
+.doc-quill-editor .ql-editor table,
+.doc-quill-editor .ql-editor .quill-better-table {
     border-collapse: collapse;
     width: 100%;
     margin: 0.75rem 0;
     font-size: 0.9rem;
+    border: 2px solid rgb(37 99 235);
 }
 .doc-quill-editor .ql-editor td,
 .doc-quill-editor .ql-editor th {
-    border: 1px solid rgb(209 213 219);
-    padding: 6px 10px;
-    min-width: 60px;
+    border: 1px solid rgb(147 197 253);
+    padding: 7px 12px;
+    min-width: 80px;
     vertical-align: top;
+}
+.doc-quill-editor .ql-editor th {
+    background: rgb(37 99 235);
+    color: #ffffff;
+    font-weight: 600;
+}
+.doc-quill-editor .ql-editor tr:nth-child(even) td {
+    background-color: rgb(239 246 255);
+}
+.dark .doc-quill-editor .ql-editor table,
+.dark .doc-quill-editor .ql-editor .quill-better-table {
+    border-color: rgb(59 130 246);
 }
 .dark .doc-quill-editor .ql-editor td,
 .dark .doc-quill-editor .ql-editor th {
-    border-color: rgb(75 85 99);
-}
-.doc-quill-editor .ql-editor th {
-    background: rgb(243 244 246);
-    font-weight: 600;
+    border-color: rgb(55 91 163);
 }
 .dark .doc-quill-editor .ql-editor th {
-    background: rgb(31 41 55);
+    background: rgb(29 78 216);
+    color: #ffffff;
+}
+.dark .doc-quill-editor .ql-editor tr:nth-child(even) td {
+    background-color: rgb(23 37 84);
 }
 
 /* quill-better-table context menu z-index fix inside Filament modal stack */
