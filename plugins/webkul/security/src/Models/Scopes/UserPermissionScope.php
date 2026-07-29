@@ -42,17 +42,25 @@ class UserPermissionScope implements Scope
         );
 
         if ($user->resource_permission === PermissionType::INDIVIDUAL) {
-            $builder->whereHas($this->ownerRelation, function ($q) use ($user) {
-                $q->where('users.id', $user->id);
-            });
+            $builder->where(function ($q) use ($user, $table, $hasDocumentationAssigneeColumn) {
+                $q->whereHas($this->ownerRelation, function ($q2) use ($user) {
+                    $q2->where('users.id', $user->id);
+                });
 
-            $builder->orWhereHas('followers', function ($q) use ($user) {
-                $q->where('chatter_followers.partner_id', $user->partner_id);
-            });
+                $q->orWhereHas('followers', function ($q2) use ($user) {
+                    $q2->where('chatter_followers.partner_id', $user->partner_id);
+                });
 
-            if ($hasDocumentationAssigneeColumn) {
-                $builder->orWhere($table.'.documentation_assignee_id', $user->id);
-            }
+                if ($hasDocumentationAssigneeColumn) {
+                    $q->orWhere($table.'.documentation_assignee_id', $user->id);
+                }
+
+                if (method_exists($q->getModel(), 'members')) {
+                    $q->orWhereHas('members', function ($q2) use ($user) {
+                        $q2->where('users.id', $user->id);
+                    });
+                }
+            });
         }
 
         if ($user->resource_permission === PermissionType::GROUP) {
