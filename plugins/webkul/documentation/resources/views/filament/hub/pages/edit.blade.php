@@ -18,18 +18,23 @@
                     if (typeof Quill === 'undefined') { console.error('Quill not loaded'); return; }
 
                     /* Register a BlockEmbed blot so Quill keeps <figure class="ql-doc-table">
-                       intact — without this Quill's MutationObserver strips unknown tags. */
+                       intact. Two fixes are required for ES5 vs ES6 class inheritance:
+                       1. Object.setPrototypeOf(TableBlot, BlockEmbed) gives the constructor
+                          the static method chain (scope, formats, etc.) that parchment walks.
+                       2. Without this, Parchment.query('doc-table') returns null and every
+                          insertEmbed / dangerouslyPasteHTML call throws. */
                     (function () {
                         var BlockEmbed = Quill.import('blots/block/embed');
                         function TableBlot() { BlockEmbed.apply(this, arguments); }
                         TableBlot.prototype = Object.create(BlockEmbed.prototype);
                         TableBlot.prototype.constructor = TableBlot;
+                        Object.setPrototypeOf(TableBlot, BlockEmbed);
                         TableBlot.create = function (value) {
                             var node = BlockEmbed.create.call(this, value);
                             node.innerHTML = value;
                             return node;
                         };
-                        TableBlot.value = function (node) { return node.innerHTML; };
+                        TableBlot.value    = function (node) { return node.innerHTML; };
                         TableBlot.blotName  = 'doc-table';
                         TableBlot.tagName   = 'figure';
                         TableBlot.className = 'ql-doc-table';
@@ -52,42 +57,46 @@
                         self.quill.root.innerHTML = self.initialContent;
                     }
 
-                    /* Override clipboard.onPaste so we wrap tables in the blot
-                       BEFORE Quill's normalizer ever sees them. */
-                    var clipboard = self.quill.getModule('clipboard');
-                    var _orig = clipboard.onPaste.bind(clipboard);
-                    clipboard.onPaste = function (e) {
-                        var html = e.clipboardData && e.clipboardData.getData('text/html');
-                        var text = e.clipboardData && e.clipboardData.getData('text/plain');
+                    /* Capture paste BEFORE Quill's bound listener so we can intercept
+                       tables. We use capture phase + stopImmediatePropagation so Quill
+                       never sees the event when we handle it ourselves. */
+                    self.quill.root.addEventListener('paste', function (e) {
+                        var cd   = e.clipboardData;
+                        var html = cd && cd.getData('text/html');
+                        var text = cd && cd.getData('text/plain');
 
                         // Rich HTML paste that contains a real <table>
                         if (html && html.indexOf('<table') !== -1) {
+                            e.stopImmediatePropagation();
                             e.preventDefault();
                             var tmp = document.createElement('div');
                             tmp.innerHTML = html;
-                            tmp.querySelectorAll('table').forEach(function (tbl) {
-                                var fig = document.createElement('figure');
-                                fig.className = 'ql-doc-table';
-                                fig.innerHTML = tbl.outerHTML;
-                                tbl.parentNode.replaceChild(fig, tbl);
+                            var tables = tmp.querySelectorAll('table');
+                            var range = self.quill.getSelection() || { index: self.quill.getLength() - 1 };
+                            var idx = range.index;
+                            tables.forEach(function (tbl) {
+                                self.quill.insertEmbed(idx, 'doc-table', tbl.outerHTML, 'user');
+                                self.quill.insertText(idx + 1, '\n', 'user');
+                                idx += 2;
                             });
-                            var range = self.quill.getSelection(true) || { index: 0 };
-                            self.quill.clipboard.dangerouslyPasteHTML(range.index, tmp.innerHTML, 'user');
+                            self.quill.setSelection(idx, 0, 'user');
                             return;
                         }
 
                         // Plain-text Markdown table (pipe syntax)
                         if (text && self.isMdTable(text)) {
+                            e.stopImmediatePropagation();
                             e.preventDefault();
-                            var inner = self.mdToTable(text).replace(/<p><br><\/p>$/, '');
-                            var wrapped = '<figure class="ql-doc-table">' + inner + '</figure>';
-                            var r = self.quill.getSelection(true) || { index: 0 };
-                            self.quill.clipboard.dangerouslyPasteHTML(r.index, wrapped, 'user');
+                            var inner = self.mdToTable(text);
+                            var r = self.quill.getSelection() || { index: self.quill.getLength() - 1 };
+                            self.quill.insertEmbed(r.index, 'doc-table', inner, 'user');
+                            self.quill.insertText(r.index + 1, '\n', 'user');
+                            self.quill.setSelection(r.index + 2, 0, 'user');
                             return;
                         }
 
-                        return _orig(e);
-                    };
+                        // Non-table paste: let Quill handle it normally
+                    }, true);
 
                     /* Sync editor → hidden textarea for Livewire */
                     self.quill.on('text-change', function () { self.syncTextarea(); });
@@ -171,7 +180,7 @@
                         }
                     }
                     if (inHead) html += '</tr></thead>';
-                    html += '</tbody></table><p><br></p>';
+                    html += '</tbody></table>';
                     return html;
                 },
 
