@@ -59,20 +59,48 @@
                         self.quill.root.innerHTML = self.initialContent;
                     }
 
-                    /* Intercept paste: convert Markdown tables to HTML before Quill sees them.
-                       We use document.execCommand('insertHTML') so the browser's own paste
-                       path handles it — bypassing both Quill and quill-better-table clipboard
-                       hooks that would strip or mishandle the table HTML. */
-                    self.quill.root.addEventListener('paste', function (e) {
+                    /* Intercept Markdown table paste at document level (capture).
+                       document capture fires before ANY element-level listener, including
+                       quill-better-table's own clipboard handler. We insert directly via
+                       the Selection API so nothing downstream can strip the table HTML. */
+                    document.addEventListener('paste', function (e) {
+                        if (!self.quill || !self.quill.root.contains(e.target)) return;
+
                         var text = (e.clipboardData || window.clipboardData).getData('text/plain');
                         if (!text || !self.looksLikeMarkdownTable(text)) return;
 
                         e.preventDefault();
                         e.stopPropagation();
+                        e.stopImmediatePropagation();
 
                         var html = self.markdownTableToHtml(text);
-                        self.quill.focus();
-                        document.execCommand('insertHTML', false, html);
+
+                        // Insert via Selection API — works in all modern browsers
+                        var sel = window.getSelection();
+                        if (sel && sel.rangeCount) {
+                            var range = sel.getRangeAt(0);
+                            range.deleteContents();
+
+                            var tmp = document.createElement('div');
+                            tmp.innerHTML = html;
+                            var frag = document.createDocumentFragment();
+                            var lastNode = null;
+                            while (tmp.firstChild) {
+                                lastNode = frag.appendChild(tmp.firstChild);
+                            }
+                            range.insertNode(frag);
+
+                            if (lastNode) {
+                                var after = range.cloneRange();
+                                after.setStartAfter(lastNode);
+                                after.collapse(true);
+                                sel.removeAllRanges();
+                                sel.addRange(after);
+                            }
+                        }
+
+                        // Let Quill sync its internal model and fire text-change
+                        self.quill.update('user');
                     }, true);
 
                     /* Sync Quill → hidden textarea. Livewire reads wire:model="pageContent"
