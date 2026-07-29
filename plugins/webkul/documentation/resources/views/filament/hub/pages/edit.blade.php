@@ -52,17 +52,42 @@
                         self.quill.root.innerHTML = self.initialContent;
                     }
 
-                    /* Markdown table paste: runs after Quill inserts plain text */
-                    self._mdTimer = null;
-                    self.quill.on('text-change', function (delta, oldDelta, source) {
-                        if (source !== 'user') return;
-                        var inserted = delta.ops
-                            .filter(function (op) { return typeof op.insert === 'string'; })
-                            .map(function (op) { return op.insert; }).join('');
-                        if (inserted.indexOf('|') === -1) return;
-                        clearTimeout(self._mdTimer);
-                        self._mdTimer = setTimeout(function () { self.convertMarkdownTables(); }, 60);
-                    });
+                    /* Override clipboard.onPaste so we wrap tables in the blot
+                       BEFORE Quill's normalizer ever sees them. */
+                    var clipboard = self.quill.getModule('clipboard');
+                    var _orig = clipboard.onPaste.bind(clipboard);
+                    clipboard.onPaste = function (e) {
+                        var html = e.clipboardData && e.clipboardData.getData('text/html');
+                        var text = e.clipboardData && e.clipboardData.getData('text/plain');
+
+                        // Rich HTML paste that contains a real <table>
+                        if (html && html.indexOf('<table') !== -1) {
+                            e.preventDefault();
+                            var tmp = document.createElement('div');
+                            tmp.innerHTML = html;
+                            tmp.querySelectorAll('table').forEach(function (tbl) {
+                                var fig = document.createElement('figure');
+                                fig.className = 'ql-doc-table';
+                                fig.innerHTML = tbl.outerHTML;
+                                tbl.parentNode.replaceChild(fig, tbl);
+                            });
+                            var range = self.quill.getSelection(true) || { index: 0 };
+                            self.quill.clipboard.dangerouslyPasteHTML(range.index, tmp.innerHTML, 'user');
+                            return;
+                        }
+
+                        // Plain-text Markdown table (pipe syntax)
+                        if (text && self.isMdTable(text)) {
+                            e.preventDefault();
+                            var inner = self.mdToTable(text).replace(/<p><br><\/p>$/, '');
+                            var wrapped = '<figure class="ql-doc-table">' + inner + '</figure>';
+                            var r = self.quill.getSelection(true) || { index: 0 };
+                            self.quill.clipboard.dangerouslyPasteHTML(r.index, wrapped, 'user');
+                            return;
+                        }
+
+                        return _orig(e);
+                    };
 
                     /* Sync editor → hidden textarea for Livewire */
                     self.quill.on('text-change', function () { self.syncTextarea(); });
@@ -94,47 +119,6 @@
                     this.quill.insertEmbed(idx, 'doc-table', inner, 'user');
                     this.quill.insertText(idx + 1, '\n', 'user');
                     this.quill.setSelection(idx + 2, 0, 'user');
-                },
-
-                /* After paste: replace Markdown pipe-table paragraphs with the blot */
-                convertMarkdownTables: function () {
-                    var self  = this;
-                    var root  = self.quill.root;
-                    var nodes = Array.prototype.slice.call(root.childNodes);
-                    var groups = [], cur = null;
-
-                    nodes.forEach(function (n) {
-                        var txt = (n.innerText || n.textContent || '').trim();
-                        if (txt.indexOf('|') !== -1) {
-                            if (!cur) cur = { nodes: [], lines: [] };
-                            cur.nodes.push(n);
-                            cur.lines.push(txt);
-                        } else {
-                            if (cur) { groups.push(cur); cur = null; }
-                        }
-                    });
-                    if (cur) groups.push(cur);
-
-                    groups.forEach(function (g) {
-                        if (!self.isMdTable(g.lines.join('\n'))) return;
-
-                        // Find the Quill index of the first node
-                        var firstBlot = Quill.find(g.nodes[0]);
-                        if (!firstBlot) return;
-                        var startIdx = self.quill.getIndex(firstBlot);
-
-                        // Count total length of all nodes to delete
-                        var totalLen = g.nodes.reduce(function (sum, n) {
-                            var b = Quill.find(n);
-                            return sum + (b ? b.length() : 0);
-                        }, 0);
-
-                        // Delete the plain-text lines and insert the blot
-                        var inner = self.mdToTable(g.lines.join('\n'));
-                        self.quill.deleteText(startIdx, totalLen, 'user');
-                        self.quill.insertEmbed(startIdx, 'doc-table', inner, 'user');
-                        self.quill.insertText(startIdx + 1, '\n', 'user');
-                    });
                 },
 
                 isMdTable: function (text) {
